@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
+import os
+import requests
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes
@@ -167,15 +168,30 @@ def register_view(request):
                 )
 
                 try:
-                    send_mail(
-                        subject=subject,
-                        message=message,
-                        from_email=None,
-                        recipient_list=[
-                            user.email
-                        ],
-                        fail_silently=False,
+                    resend_api_key = os.environ.get("RESEND_API_KEY")
+
+                    if not resend_api_key:
+                        raise Exception("RESEND_API_KEY is not configured")
+
+                    response = requests.post(
+                        "https://api.resend.com/emails",
+                        headers={
+                            "Authorization": f"Bearer {resend_api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "from": os.environ.get(
+                                "RESEND_FROM_EMAIL",
+                                "onboarding@resend.dev"
+                            ),
+                            "to": [user.email],
+                            "subject": subject,
+                            "text": message,
+                        },
+                        timeout=20,
                     )
+
+                    response.raise_for_status()
 
                 except Exception as exc:
                     # ----------------------------------------
@@ -197,8 +213,7 @@ def register_view(request):
                     messages.error(
                         request,
                         "Verification email could not be sent. "
-                        "Please check your Gmail SMTP settings "
-                        "and try again.",
+                        "Please check the email service configuration and try again.",
                     )
 
                 else:
