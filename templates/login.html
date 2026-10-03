@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | AI Video Repurposer</title>
+
+    <style>
+        :root {
+            --bg: #030712;
+            --panel: rgba(17, 24, 39, 0.88);
+            --panel-strong: #111827;
+            --border: rgba(148, 163, 184, 0.16);
+            --border-focus: rgba(99, 102, 241, 0.8);
+            --text: #f9fafb;
+            --muted: #9ca3af;
+            --muted-light: #d1d5db;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --danger-bg: rgba(127, 29, 29, 0.25);
+            --danger-border: rgba(248, 113, 113, 0.28);
+            --danger-text: #fecaca;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.13), transparent 28%),
+                radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.10), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+            overflow-x: hidden;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .brand-mark {
+            width: 54px;
+            height: 54px;
+            margin: 0 auto 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            box-shadow: 0 16px 40px rgba(79, 70, 229, 0.28);
+            font-size: 23px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .brand-name {
+            font-size: 18px;
+            font-weight: 750;
+            letter-spacing: -0.35px;
+        }
+
+        .brand-subtitle {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .login-card {
+            width: 100%;
+            padding: 34px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow:
+                0 24px 70px rgba(0, 0, 0, 0.42),
+                inset 0 1px 0 rgba(255, 255, 255, 0.025);
+            backdrop-filter: blur(16px);
+        }
+
+        .card-heading {
+            margin-bottom: 26px;
+        }
+
+        .card-heading h1 {
+            font-size: 27px;
+            line-height: 1.15;
+            letter-spacing: -0.7px;
+        }
+
+        .card-heading p {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 11px 13px;
+            margin-bottom: 8px;
+            border: 1px solid var(--danger-border);
+            border-radius: 10px;
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--muted-light);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .form-group input {
+            width: 100%;
+            min-height: 46px;
+            padding: 11px 14px 11px 39px;
+            border: 1px solid #273244;
+            border-radius: 10px;
+            outline: none;
+            background: rgba(3, 7, 18, 0.82);
+            color: var(--text);
+            font-size: 14px;
+            transition:
+                border-color 0.18s ease,
+                box-shadow 0.18s ease,
+                background 0.18s ease;
+        }
+
+        .form-group input::placeholder {
+            color: #64748b;
+        }
+
+        .form-group input:hover {
+            border-color: #3b4658;
+        }
+
+        .form-group input:focus {
+            border-color: var(--border-focus);
+            background: rgba(3, 7, 18, 0.96);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        .login-btn {
+            width: 100%;
+            min-height: 46px;
+            margin-top: 4px;
+            border: 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.1px;
+            cursor: pointer;
+            box-shadow: 0 12px 26px rgba(79, 70, 229, 0.20);
+            transition:
+                transform 0.18s ease,
+                box-shadow 0.18s ease,
+                filter 0.18s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 16px 32px rgba(79, 70, 229, 0.28);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:focus-visible,
+        .register-link a:focus-visible {
+            outline: 2px solid #818cf8;
+            outline-offset: 3px;
+        }
+
+        .register-link {
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(148, 163, 184, 0.10);
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .register-link a {
+            margin-left: 4px;
+            color: #a5b4fc;
+            font-weight: 650;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            color: #c7d2fe;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            text-align: center;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 18px;
+            }
+
+            .login-card {
+                padding: 25px 20px;
+                border-radius: 16px;
+            }
+
+            .brand {
+                margin-bottom: 18px;
+            }
+
+            .brand-mark {
+                width: 48px;
+                height: 48px;
+                border-radius: 13px;
+                font-size: 20px;
+            }
+
+            .card-heading h1 {
+                font-size: 24px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <div class="brand">
+        <div class="brand-mark" aria-hidden="true">AI</div>
+        <div class="brand-name">AI Video Repurposer</div>
+        <div class="brand-subtitle">Create once. Repurpose everywhere.</div>
+    </div>
+
+    <main class="login-card">
+
+        <div class="card-heading">
+            <h1>Welcome back</h1>
+            <p>Login to continue managing your videos, clips and publishing workflow.</p>
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <input
+                type="hidden"
+                name="next"
+                value="{{ next }}"
+            >
+
+            <div class="form-group">
+                <label for="username">Username</label>
+
+                <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">@</span>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                        autofocus
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+
+                <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">●</span>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                class="login-btn"
+            >
+                Login to Dashboard
+            </button>
+        </form>
+
+        <div class="register-link">
+            Don't have an account?
+            <a href="{% url 'register' %}">Create an account</a>
+        </div>
+
+    </main>
+
+    <div class="footer-note">
+        Secure access to your AI Video Repurposer workspace
+    </div>
+
+</div>
+
+</body>
+</html>

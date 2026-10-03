@@ -1,0 +1,11 @@
+Django==6.1
+python-dotenv==1.2.3
+requests==2.34.2
+google-api-python-client==2.200.0
+google-auth==2.57.0
+google-auth-oauthlib==1.4.1
+google-auth-httplib2==0.4.2
+yt-dlp==2026.8.19
+APScheduler==3.11.3
+google-genai==2.25.0
+openai-whisper==20250625

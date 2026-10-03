@@ -1,0 +1,4695 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | AI Video Repurposer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      min-height: 100vh;
+      background: #f6f8fc;
+      color: #111827;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit
+    }
+
+    button {
+      border: 0
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit
+    }
+
+    .app {
+      min-height: 100vh
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 252px;
+      padding: 22px 14px;
+      background: #101828;
+      border-right: 1px solid #1d2939;
+      z-index: 50;
+      display: flex;
+      flex-direction: column
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 3px 9px 30px
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #6d5dfc, #4f46e5);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(79, 70, 229, .3)
+    }
+
+    .brand-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff
+    }
+
+    .brand-caption {
+      font-size: 9px;
+      color: #8b99ad;
+      margin-top: 3px
+    }
+
+    .nav-label {
+      font-size: 8px;
+      font-weight: 800;
+      color: #66758b;
+      letter-spacing: .16em;
+      padding: 0 11px 9px;
+      text-transform: uppercase
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 12px;
+      border-radius: 11px;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700
+    }
+
+    .nav-item:hover {
+      background: #182337;
+      color: #fff;
+      transform: translateX(2px)
+    }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(99, 91, 255, .25), rgba(99, 91, 255, .08));
+      color: #fff;
+      box-shadow: inset 2px 0 #7167ff
+    }
+
+    .nav-item.active .nav-icon {
+      color: #8b83ff
+    }
+
+    .nav-icon {
+      display: grid;
+      place-items: center
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border: 1px solid #263246;
+      background: #141e2e;
+      padding: 13px;
+      border-radius: 14px
+    }
+
+    .engine-label {
+      font-size: 8px;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 800
+    }
+
+    .engine-title {
+      font-size: 10px;
+      font-weight: 800;
+      margin-top: 6px;
+      color: #fff
+    }
+
+    .engine-status {
+      font-size: 8px;
+      font-weight: 750;
+      color: #86efac;
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      margin-top: 9px
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, .08)
+    }
+
+    .main {
+      margin-left: 252px;
+      padding: 0 30px 70px;
+      min-height: 100vh
+    }
+
+    .topbar {
+      height: 84px;
+      border-bottom: 1px solid #e7ebf2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -.7px;
+      color: #111827
+    }
+
+    .page-subtitle {
+      color: #7b8799;
+      font-size: 11px;
+      margin-top: 5px
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #ecfdf3;
+      border: 1px solid #c9f1d8;
+      color: #168348;
+      font-size: 9px;
+      font-weight: 800
+    }
+
+    .status-pill .dot {
+      width: 6px;
+      height: 6px
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      border: 1px solid #e2e7ef;
+      background: #fff;
+      color: #64748b;
+      display: grid;
+      place-items: center
+    }
+
+    .icon-button:hover {
+      color: #4f46e5;
+      border-color: #cfd6e3;
+      transform: translateY(-2px)
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px
+    }
+
+    .stat {
+      position: relative;
+      overflow: hidden;
+      padding: 16px;
+      border: 1px solid #e6eaf0;
+      border-radius: 15px;
+      background: #fff;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, .035)
+    }
+
+    .stat:hover {
+      transform: translateY(-3px);
+      border-color: #d8dff0;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .07)
+    }
+
+    .stat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1
+    }
+
+    .stat-label {
+      font-size: 9px;
+      color: #7b8799;
+      font-weight: 700
+    }
+
+    .stat-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: #f0efff;
+      color: #5b52e8;
+      display: grid;
+      place-items: center
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 9px;
+      letter-spacing: -.8px;
+      position: relative;
+      z-index: 1;
+      color: #111827
+    }
+
+    .section {
+      margin-top: 22px
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 11px
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -.2px;
+      color: #172033
+    }
+
+    .section-desc {
+      font-size: 10px;
+      color: #8995a7;
+      margin-top: 4px
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e9f0;
+      border-radius: 18px;
+      box-shadow: 0 7px 25px rgba(15, 23, 42, .045)
+    }
+
+    .card:hover {
+      border-color: #d9deea
+    }
+
+    .workflow-banner {
+      padding: 17px 19px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      background: linear-gradient(135deg, #faf9ff, #fff)
+    }
+
+    .workflow-copy {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .workflow-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #efedff;
+      color: #5b52e8;
+      display: grid;
+      place-items: center
+    }
+
+    .workflow-copy h3 {
+      font-size: 12px;
+      color: #172033
+    }
+
+    .workflow-copy p {
+      font-size: 9px;
+      color: #8995a7;
+      margin-top: 4px
+    }
+
+    .current-mode {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #f0efff;
+      color: #5b52e8;
+      border: 1px solid #dedbff;
+      font-size: 8px;
+      font-weight: 850
+    }
+
+    .create-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(340px, .82fr);
+      gap: 16px
+    }
+
+    .create-card,
+    .manual-card {
+      padding: 21px
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .head-left {
+      display: flex;
+      gap: 11px;
+      align-items: center
+    }
+
+    .head-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #eef4ff;
+      color: #4f7cff;
+      display: grid;
+      place-items: center
+    }
+
+    .head-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #172033
+    }
+
+    .head-sub {
+      font-size: 9px;
+      color: #8995a7;
+      margin-top: 4px
+    }
+
+    .badge {
+      font-size: 7px;
+      font-weight: 850;
+      padding: 6px 8px;
+      border-radius: 999px
+    }
+
+    .badge-green {
+      background: #ecfdf3;
+      color: #168348
+    }
+
+    .badge-blue {
+      background: #eef4ff;
+      color: #3d6be8
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px
+    }
+
+    .mode-card {
+      position: relative;
+      cursor: pointer
+    }
+
+    .mode-card input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none
+    }
+
+    .mode-box {
+      min-height: 82px;
+      padding: 13px;
+      border: 1px solid #e5e9f0;
+      border-radius: 13px;
+      background: #fbfcfe;
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    .mode-card:hover .mode-box {
+      transform: translateY(-2px);
+      border-color: #cfcaff;
+      background: #faf9ff
+    }
+
+    .mode-card input:checked+.mode-box {
+      border-color: #7469ef;
+      background: linear-gradient(145deg, #f1efff, #fbfaff);
+      box-shadow: 0 0 0 3px rgba(99, 91, 255, .07)
+    }
+
+    .mode-icon {
+      width: 35px;
+      height: 35px;
+      border-radius: 10px;
+      background: #efedff;
+      color: #5b52e8;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto
+    }
+
+    .mode-name {
+      font-size: 10px;
+      font-weight: 800;
+      color: #172033
+    }
+
+    .mode-text {
+      font-size: 8px;
+      color: #8a96a8;
+      margin-top: 4px;
+      line-height: 1.45
+    }
+
+    .dropzone {
+      min-height: 150px;
+      margin-top: 16px;
+      border: 1.5px dashed #c9c3ff;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: linear-gradient(180deg, #fbfaff, #fff);
+      cursor: pointer
+    }
+
+    .dropzone:hover {
+      border-color: #766cf5;
+      background: #faf9ff;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(99, 91, 255, .08)
+    }
+
+    .dropzone.dragover {
+      border-color: #5b52e8;
+      background: #f2f0ff;
+      transform: scale(1.005)
+    }
+
+    .drop-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: #eeecff;
+      color: #5b52e8;
+      display: grid;
+      place-items: center;
+      margin: auto;
+      font-size: 20px
+    }
+
+    .drop-title {
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 9px;
+      color: #172033
+    }
+
+    .drop-text {
+      font-size: 8px;
+      color: #8a96a8;
+      margin-top: 4px
+    }
+
+    .drop-file {
+      display: none
+    }
+
+    #id_video_file {
+      display: none
+    }
+
+    .selected-file {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 9px;
+      padding: 9px 11px;
+      border: 1px solid #dce2ec;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 9px
+    }
+
+    .selected-file strong {
+      color: #172033
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px
+    }
+
+    .field {
+      min-width: 0
+    }
+
+    .field.full {
+      grid-column: 1/-1
+    }
+
+    .field label {
+      display: block;
+      color: #344054;
+      font-size: 9px;
+      font-weight: 800;
+      margin-bottom: 6px
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      min-height: 41px;
+      padding: 9px 11px;
+      border: 1px solid #dfe4ec;
+      border-radius: 10px;
+      background: #fff;
+      color: #172033;
+      outline: none;
+      font-size: 9px
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder {
+      color: #a0aaba
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: #766cf5;
+      box-shadow: 0 0 0 3px rgba(99, 91, 255, .08)
+    }
+
+    .field input[type=file] {
+      padding: 7px
+    }
+
+    .errorlist {
+      list-style: none;
+      color: #dc2626;
+      font-size: 7px;
+      margin: 0 0 5px
+    }
+
+    .helptext {
+      display: block;
+      color: #8995a7;
+      font-size: 7px;
+      margin-top: 4px
+    }
+
+    .auto-options {
+      margin-top: 16px;
+      padding: 15px;
+      border: 1px solid #e6e8f0;
+      border-radius: 14px;
+      background: #fafbfe
+    }
+
+    .subhead {
+      font-size: 10px;
+      font-weight: 800;
+      color: #172033
+    }
+
+    .subtext {
+      font-size: 8px;
+      color: #8995a7;
+      margin-top: 3px;
+      line-height: 1.45
+    }
+
+    .platform-select-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 11px
+    }
+
+    .platform-check {
+      position: relative;
+      cursor: pointer
+    }
+
+    .platform-check input {
+      position: absolute;
+      opacity: 0
+    }
+
+    .platform-check-box {
+      min-height: 62px;
+      border: 1px solid #e3e7ee;
+      border-radius: 11px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: #64748b;
+      font-size: 8px;
+      font-weight: 800
+    }
+
+    .platform-check:hover .platform-check-box {
+      transform: translateY(-2px);
+      border-color: #cfcaff
+    }
+
+    .platform-check input:checked+.platform-check-box {
+      border-color: #756bf0;
+      background: #f2f0ff;
+      color: #5147d8;
+      box-shadow: 0 0 0 2px rgba(99, 91, 255, .06)
+    }
+
+    .platform-check input:disabled+.platform-check-box {
+      opacity: .45
+    }
+
+    .account-fields {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px
+    }
+
+    .account-field.hidden {
+      display: none
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      min-height: 44px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 9px;
+      font-weight: 850;
+      cursor: pointer
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #675df0, #5147d8);
+      color: #fff;
+      box-shadow: 0 9px 22px rgba(81, 71, 216, .18)
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 13px 28px rgba(81, 71, 216, .24)
+    }
+
+    .primary-btn:disabled {
+      opacity: .7;
+      cursor: not-allowed;
+      transform: none
+    }
+
+    .secondary-btn {
+      background: #fff;
+      color: #344054;
+      border: 1px solid #dfe4ec
+    }
+
+    .secondary-btn:hover {
+      transform: translateY(-2px);
+      border-color: #cbd3df;
+      background: #f8fafc
+    }
+
+    .submit-wrap {
+      margin-top: 13px
+    }
+
+    .submit-btn {
+      width: 100%;
+      font-size: 10px
+    }
+
+    .form-error {
+      display: none;
+      margin-top: 9px;
+      padding: 9px;
+      border-radius: 9px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #be123c;
+      font-size: 8px
+    }
+
+    .form-error.show {
+      display: block
+    }
+
+    .manual-card {
+      display: flex;
+      flex-direction: column
+    }
+
+    .manual-empty {
+      flex: 1;
+      min-height: 330px;
+      margin-top: 15px;
+      border: 1px dashed #d8dee8;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      background: linear-gradient(180deg, #fbfcfe, #fff)
+    }
+
+    .manual-empty .big-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: #eef4ff;
+      color: #4f7cff;
+      display: grid;
+      place-items: center;
+      margin: auto;
+      font-size: 20px
+    }
+
+    .manual-empty h4 {
+      font-size: 12px;
+      margin-top: 11px;
+      color: #172033
+    }
+
+    .manual-empty p {
+      font-size: 8px;
+      color: #8995a7;
+      max-width: 280px;
+      line-height: 1.55;
+      margin: 6px auto 0
+    }
+
+    .manual-ready {
+      display: none;
+      margin-top: 15px
+    }
+
+    .manual-ready.show {
+      display: block
+    }
+
+    .selection-summary {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 10px
+    }
+
+    .summary-chip {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #f0efff;
+      color: #5b52e8;
+      font-size: 7px;
+      font-weight: 800
+    }
+
+    .processing {
+      padding: 19px
+    }
+
+    .processing-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .processing-left {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .processing-icon {
+      width: 39px;
+      height: 39px;
+      border-radius: 11px;
+      background: #efedff;
+      color: #5b52e8;
+      display: grid;
+      place-items: center
+    }
+
+    .processing-title {
+      font-size: 11px;
+      font-weight: 850;
+      color: #172033
+    }
+
+    .processing-stage {
+      font-size: 8px;
+      color: #8995a7;
+      margin-top: 3px
+    }
+
+    .percent {
+      font-size: 20px;
+      font-weight: 850;
+      color: #5b52e8
+    }
+
+    .progress-track {
+      height: 9px;
+      border-radius: 999px;
+      background: #edf0f5;
+      overflow: hidden;
+      margin-top: 16px
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6258ea, #8b82ff);
+      transition: width .4s ease;
+      position: relative
+    }
+
+    .progress-fill:after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .4), transparent);
+      animation: shine 1.5s linear infinite
+    }
+
+    @keyframes shine {
+      from {
+        transform: translateX(-100%)
+      }
+
+      to {
+        transform: translateX(100%)
+      }
+    }
+
+    .processing-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 7px;
+      color: #8995a7
+    }
+
+    .processing-status {
+      color: #344054;
+      font-weight: 800
+    }
+
+    .processing-error {
+      display: none;
+      margin-top: 10px;
+      padding: 9px;
+      border-radius: 9px;
+      background: #fff1f2;
+      color: #be123c;
+      font-size: 8px
+    }
+
+    .processing-error.show {
+      display: block
+    }
+
+    .clips-card {
+      overflow: hidden
+    }
+
+    .clips-head {
+      padding: 17px 19px;
+      border-bottom: 1px solid #e7ebf2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .count-badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #f0efff;
+      color: #5b52e8;
+      font-size: 7px;
+      font-weight: 850
+    }
+
+    .clips-grid {
+      padding: 17px 19px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px
+    }
+
+    .clip-card {
+      overflow: hidden;
+      border: 1px solid #e3e7ee;
+      border-radius: 14px;
+      background: #fff;
+      position: relative
+    }
+
+    .clip-card:hover {
+      transform: translateY(-5px);
+      border-color: #cfcaff;
+      box-shadow: 0 16px 34px rgba(15, 23, 42, .1)
+    }
+
+    .clip-card.selected {
+      border-color: #7167f0;
+      box-shadow: 0 0 0 2px rgba(99, 91, 255, .08)
+    }
+
+    .clip-video {
+      width: 100%;
+      aspect-ratio: 9/16;
+      max-height: 340px;
+      display: block;
+      object-fit: cover;
+      background: #e9edf3
+    }
+
+    .clip-body {
+      padding: 11px
+    }
+
+    .clip-title {
+      font-size: 9px;
+      font-weight: 850;
+      color: #172033
+    }
+
+    .clip-meta {
+      display: flex;
+      gap: 5px;
+      margin-top: 7px;
+      flex-wrap: wrap
+    }
+
+    .mini-chip {
+      font-size: 6px;
+      font-weight: 800;
+      padding: 4px 6px;
+      border-radius: 999px;
+      background: #f0efff;
+      color: #5b52e8
+    }
+
+    .clip-description {
+      font-size: 7px;
+      color: #8995a7;
+      line-height: 1.45;
+      margin-top: 7px
+    }
+
+    .clip-select {
+      position: absolute;
+      top: 9px;
+      left: 9px;
+      width: 27px;
+      height: 27px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .92);
+      display: grid;
+      place-items: center;
+      backdrop-filter: blur(8px);
+      border: 1px solid #dfe4ec;
+      cursor: pointer;
+      z-index: 2
+    }
+
+    .clip-select input {
+      accent-color: #635bff
+    }
+
+    .manual-controls {
+      margin-top: 14px;
+      padding: 15px;
+      border: 1px solid #e5e9f0;
+      border-radius: 14px;
+      background: #fafbfe
+    }
+
+    .manual-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    .manual-platforms {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-top: 9px
+    }
+
+    .manual-platform label {
+      cursor: pointer;
+      display: block
+    }
+
+    .manual-platform input {
+      position: absolute;
+      opacity: 0
+    }
+
+    .manual-platform-box {
+      min-height: 54px;
+      border: 1px solid #e3e7ee;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      gap: 3px;
+      color: #64748b;
+      background: #fff;
+      font-size: 7px;
+      font-weight: 800
+    }
+
+    .manual-platform input:checked+.manual-platform-box {
+      border-color: #756bf0;
+      background: #f2f0ff;
+      color: #5147d8
+    }
+
+    .manual-platform-box:hover {
+      transform: translateY(-2px)
+    }
+
+    .manual-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 100;
+      width: min(360px, calc(100vw - 30px));
+      padding: 13px 15px;
+      border: 1px solid #dfe4ec;
+      border-radius: 13px;
+      background: #fff;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, .15);
+      transform: translateY(25px);
+      opacity: 0;
+      pointer-events: none
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1
+    }
+
+    .toast.success {
+      border-color: #bbefcf
+    }
+
+    .toast.error {
+      border-color: #fecaca
+    }
+
+    .toast-title {
+      font-size: 9px;
+      font-weight: 850;
+      color: #172033
+    }
+
+    .toast-text {
+      font-size: 8px;
+      color: #8995a7;
+      margin-top: 3px;
+      line-height: 1.4
+    }
+
+    .schedule-card {
+      overflow: hidden
+    }
+
+    .schedule-row {
+      display: grid;
+      grid-template-columns: 40px 1.5fr .8fr .8fr 85px;
+      gap: 10px;
+      align-items: center;
+      padding: 13px 19px;
+      border-bottom: 1px solid #edf0f4
+    }
+
+    .schedule-row:last-child {
+      border-bottom: 0
+    }
+
+    .schedule-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      background: #f1f4f8;
+      display: grid;
+      place-items: center;
+      color: #718096
+    }
+
+    .schedule-name {
+      font-size: 8px;
+      font-weight: 800;
+      color: #172033
+    }
+
+    .schedule-sub {
+      font-size: 7px;
+      color: #8995a7;
+      margin-top: 3px
+    }
+
+    .schedule-status {
+      width: max-content;
+      padding: 5px 7px;
+      border-radius: 999px;
+      background: #ecfdf3;
+      color: #168348;
+      font-size: 6px;
+      font-weight: 850
+    }
+
+    .empty {
+      padding: 30px;
+      text-align: center;
+      color: #8995a7;
+      font-size: 8px
+    }
+
+    .empty-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #f1f4f8;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 9px
+    }
+
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px
+    }
+
+    .account-row {
+      padding: 13px;
+      border: 1px solid #e5e9f0;
+      border-radius: 13px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 9px
+    }
+
+    .account-row:hover {
+      transform: translateY(-3px);
+      border-color: #cfcaff
+    }
+
+    .account-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: #f1f4f8;
+      display: grid;
+      place-items: center;
+      font-size: 8px;
+      font-weight: 900;
+      color: #475569
+    }
+
+    .account-info {
+      min-width: 0;
+      flex: 1
+    }
+
+    .account-name {
+      font-size: 8px;
+      font-weight: 850;
+      color: #172033
+    }
+
+    .account-state {
+      font-size: 7px;
+      color: #8995a7;
+      margin-top: 3px
+    }
+
+    .connect {
+      font-size: 7px;
+      color: #5b52e8;
+      font-weight: 850
+    }
+
+    @media(max-width:1200px) {
+      .stats {
+        grid-template-columns: repeat(3, 1fr)
+      }
+
+      .create-grid {
+        grid-template-columns: 1fr
+      }
+
+      .clips-grid {
+        grid-template-columns: repeat(3, 1fr)
+      }
+
+      .accounts-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media(max-width:900px) {
+      .sidebar {
+        width: 76px;
+        padding: 18px 9px
+      }
+
+      .brand {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0
+      }
+
+      .brand-text,
+      .nav-label,
+      .nav-item span:not(.nav-icon),
+      .sidebar-footer {
+        display: none
+      }
+
+      .nav-item {
+        justify-content: center;
+        padding: 12px
+      }
+
+      .main {
+        margin-left: 76px;
+        padding-left: 20px;
+        padding-right: 20px
+      }
+
+      .platform-select-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media(max-width:650px) {
+      .sidebar {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: auto;
+        padding: 9px 10px;
+        border-right: 0;
+        border-bottom: 1px solid #e2e7ef;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        background: #101828
+      }
+
+      .brand {
+        padding: 0;
+        justify-content: flex-start;
+        flex: 0 0 auto
+      }
+
+      .brand-text {
+        display: block
+      }
+
+      .brand-mark {
+        width: 38px;
+        height: 38px
+      }
+
+      .brand-caption {
+        display: none
+      }
+
+      .nav-label,
+      .sidebar-footer {
+        display: none
+      }
+
+      .nav {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 4px;
+        flex: 1
+      }
+
+      .nav-item {
+        padding: 9px 10px;
+        justify-content: center;
+        white-space: nowrap
+      }
+
+      .nav-item span:not(.nav-icon) {
+        display: inline;
+        font-size: 8px
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 0 12px 35px
+      }
+
+      .topbar {
+        height: 70px
+      }
+
+      .page-title {
+        font-size: 19px
+      }
+
+      .page-subtitle {
+        font-size: 8px
+      }
+
+      .status-pill {
+        display: none
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px
+      }
+
+      .stat {
+        padding: 13px
+      }
+
+      .stat-value {
+        font-size: 20px
+      }
+
+      .section {
+        margin-top: 18px
+      }
+
+      .workflow-banner {
+        align-items: flex-start;
+        flex-direction: column
+      }
+
+      .create-card,
+      .manual-card {
+        padding: 14px
+      }
+
+      .form-grid,
+      .manual-controls-grid {
+        grid-template-columns: 1fr
+      }
+
+      .field.full {
+        grid-column: auto
+      }
+
+      .mode-grid {
+        grid-template-columns: 1fr
+      }
+
+      .account-fields {
+        grid-template-columns: 1fr
+      }
+
+      .platform-select-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .clips-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 12px;
+        gap: 8px
+      }
+
+      .manual-platforms {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .manual-actions {
+        grid-template-columns: 1fr
+      }
+
+      .schedule-row {
+        grid-template-columns: 40px 1fr;
+        padding: 11px 13px
+      }
+
+      .schedule-row>*:nth-child(3),
+      .schedule-row>*:nth-child(4),
+      .schedule-row>*:nth-child(5) {
+        display: none
+      }
+
+      .accounts-grid {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    @media(max-width:430px) {
+      .stats {
+        grid-template-columns: 1fr
+      }
+
+      .clips-grid {
+        grid-template-columns: 1fr
+      }
+
+      .accounts-grid {
+        grid-template-columns: 1fr
+      }
+
+      .page-subtitle {
+        display: none
+      }
+
+      .nav-item span:not(.nav-icon) {
+        display: none
+      }
+
+      .nav-item {
+        padding: 10px
+      }
+
+      .brand-name {
+        font-size: 11px
+      }
+
+      .workflow-copy {
+        align-items: flex-start
+      }
+
+      .mode-box {
+        min-height: 70px
+      }
+    }
+
+    /* ============================================================
+   TAILADMIN-INSPIRED DASHBOARD OVERRIDES
+   Visual redesign only — existing Django/JS logic preserved.
+   ============================================================ */
+    :root {
+      --primary: #4f46e5;
+      --primary-2: #6366f1;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #eaecf0;
+      --soft: #f8fafc;
+      --card: #fff;
+      --success: #12b76a;
+      --danger: #f04438;
+      --warning: #f79009
+    }
+
+    body {
+      background: #f9fafb;
+      color: var(--ink);
+      font-size: 14px
+    }
+
+    .sidebar {
+      width: 248px;
+      background: #0b1220;
+      border-right: 1px solid #182230;
+      padding: 20px 13px
+    }
+
+    .brand {
+      padding: 4px 10px 27px
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #635bff, #4338ca);
+      box-shadow: 0 8px 22px rgba(79, 70, 229, .25)
+    }
+
+    .brand-name {
+      font-size: 13px;
+      letter-spacing: -.2px
+    }
+
+    .brand-caption {
+      font-size: 9px;
+      color: #98a2b3
+    }
+
+    .nav-label {
+      font-size: 8px;
+      color: #667085
+    }
+
+    .nav {
+      gap: 3px
+    }
+
+    .nav-item {
+      min-height: 40px;
+      padding: 10px 11px;
+      border-radius: 8px;
+      font-size: 10px;
+      color: #98a2b3
+    }
+
+    .nav-item:hover {
+      background: #151f2f;
+      color: #fff;
+      transform: none
+    }
+
+    .nav-item.active {
+      background: #1b2540;
+      color: #fff;
+      box-shadow: inset 3px 0 #6366f1
+    }
+
+    .nav-item.active .nav-icon {
+      color: #a5b4fc
+    }
+
+    .sidebar-footer {
+      border-color: #253044;
+      background: #111a2a;
+      border-radius: 10px
+    }
+
+    .main {
+      margin-left: 248px;
+      padding: 0 32px 70px;
+      background: #f9fafb
+    }
+
+    .topbar {
+      height: 76px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .page-title {
+      font-size: 21px;
+      letter-spacing: -.5px
+    }
+
+    .page-subtitle {
+      font-size: 10px;
+      color: #667085
+    }
+
+    .status-pill {
+      padding: 7px 10px;
+      font-size: 8px
+    }
+
+    .icon-button {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px
+    }
+
+    .stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px
+    }
+
+    .stat {
+      padding: 17px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .03)
+    }
+
+    .stat:hover {
+      transform: none;
+      box-shadow: 0 5px 16px rgba(16, 24, 40, .06)
+    }
+
+    .stat-label {
+      font-size: 9px;
+      color: #667085
+    }
+
+    .stat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px
+    }
+
+    .stat-value {
+      font-size: 23px
+    }
+
+    .dashboard-overview {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(280px, .75fr);
+      gap: 14px;
+      margin-top: 16px
+    }
+
+    .overview-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .03)
+    }
+
+    .overview-main {
+      padding: 18px
+    }
+
+    .overview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .overview-title {
+      font-size: 12px;
+      font-weight: 800
+    }
+
+    .overview-sub {
+      font-size: 9px;
+      color: #667085;
+      margin-top: 3px
+    }
+
+    .overview-bars {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 17px
+    }
+
+    .platform-mini {
+      padding: 12px;
+      border: 1px solid #eef0f3;
+      border-radius: 10px;
+      background: #fcfcfd
+    }
+
+    .platform-mini-top {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .platform-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #f2f4f7;
+      display: grid;
+      place-items: center;
+      font-size: 8px;
+      font-weight: 900;
+      color: #344054
+    }
+
+    .platform-mini-name {
+      font-size: 8px;
+      font-weight: 800
+    }
+
+    .platform-mini-count {
+      font-size: 18px;
+      font-weight: 850;
+      margin-top: 9px;
+      letter-spacing: -.4px
+    }
+
+    .platform-mini-meta {
+      font-size: 7px;
+      color: #667085;
+      margin-top: 2px
+    }
+
+    .platform-progress {
+      height: 5px;
+      border-radius: 999px;
+      background: #eef2f6;
+      margin-top: 9px;
+      overflow: hidden
+    }
+
+    .platform-progress span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6)
+    }
+
+    .quick-card {
+      padding: 18px
+    }
+
+    .quick-title {
+      font-size: 12px;
+      font-weight: 800
+    }
+
+    .quick-sub {
+      font-size: 9px;
+      color: #667085;
+      margin-top: 3px
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 15px
+    }
+
+    .quick-action {
+      min-height: 70px;
+      padding: 11px;
+      border: 1px solid #eaecf0;
+      border-radius: 10px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between
+    }
+
+    .quick-action:hover {
+      border-color: #c7d2fe;
+      background: #fafaff;
+      transform: translateY(-1px)
+    }
+
+    .quick-icon {
+      font-size: 14px;
+      color: #4f46e5
+    }
+
+    .quick-label {
+      font-size: 8px;
+      font-weight: 800;
+      color: #344054
+    }
+
+    .quick-note {
+      font-size: 7px;
+      color: #98a2b3;
+      margin-top: 2px
+    }
+
+    .section {
+      margin-top: 20px
+    }
+
+    .section-head {
+      margin-bottom: 10px
+    }
+
+    .section-title {
+      font-size: 13px
+    }
+
+    .section-desc {
+      font-size: 9px;
+      color: #667085
+    }
+
+    .card {
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .03)
+    }
+
+    .workflow-banner {
+      padding: 14px 17px
+    }
+
+    .create-card,
+    .manual-card {
+      padding: 18px
+    }
+
+    .head-title {
+      font-size: 12px
+    }
+
+    .head-sub {
+      font-size: 8px
+    }
+
+    .mode-box {
+      border-radius: 10px
+    }
+
+    .dropzone {
+      border-radius: 12px
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-radius: 9px
+    }
+
+    .secondary-btn {
+      border-radius: 9px
+    }
+
+    .clips-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr))
+    }
+
+    .clip-card {
+      border-radius: 11px
+    }
+
+    .account-row {
+      border-radius: 10px
+    }
+
+    .schedule-row {
+      padding: 12px 17px
+    }
+
+    @media(max-width:1200px) {
+      .dashboard-overview {
+        grid-template-columns: 1fr
+      }
+
+      .overview-bars {
+        grid-template-columns: repeat(4, 1fr)
+      }
+    }
+
+    @media(max-width:900px) {
+      .sidebar {
+        width: 72px
+      }
+
+      .main {
+        margin-left: 72px
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .overview-bars {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media(max-width:650px) {
+      .sidebar {
+        width: 100%;
+        position: sticky
+      }
+
+      .main {
+        margin-left: 0
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .dashboard-overview {
+        grid-template-columns: 1fr
+      }
+
+      .overview-bars {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    @media(max-width:430px) {
+      .stats {
+        grid-template-columns: 1fr
+      }
+
+      .overview-bars {
+        grid-template-columns: 1fr
+      }
+    }
+
+
+    .performance-card {
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .03)
+    }
+
+    .performance-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.7fr) .7fr .7fr .7fr;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #f0f2f5;
+      font-size: 9px;
+      color: #667085
+    }
+
+    .performance-row:last-child {
+      border-bottom: 0
+    }
+
+    .performance-head-row {
+      background: #fafbfc;
+      color: #98a2b3;
+      font-size: 7px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em
+    }
+
+    .performance-platform {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0
+    }
+
+    .performance-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #f2f4f7;
+      display: grid;
+      place-items: center;
+      font-size: 8px;
+      font-weight: 900;
+      color: #344054;
+      flex: 0 0 auto
+    }
+
+    .performance-platform strong {
+      display: block;
+      font-size: 9px;
+      color: #101828
+    }
+
+    .performance-platform small {
+      display: block;
+      font-size: 7px;
+      color: #98a2b3;
+      margin-top: 3px
+    }
+
+    .performance-number {
+      font-size: 15px;
+      font-weight: 850;
+      color: #344054
+    }
+
+    .published-number {
+      color: #4f46e5
+    }
+
+    .performance-status {
+      display: inline-flex;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #ecfdf3;
+      color: #067647;
+      font-size: 6px;
+      font-weight: 850
+    }
+
+    @media(max-width:650px) {
+      .performance-row {
+        grid-template-columns: 1fr 55px 65px
+      }
+
+      .performance-head-row {
+        display: none
+      }
+
+      .performance-row>div:last-child {
+        display: none
+      }
+
+      .performance-platform small {
+        display: none
+      }
+    }
+
+
+    /* STEP 5 — Recent content + schedule redesign */
+    .content-table-card {
+      overflow: hidden
+    }
+
+    .content-table-head,
+    .content-table-row {
+      display: grid;
+      grid-template-columns: minmax(230px, 1.8fr) minmax(130px, .9fr) minmax(105px, .7fr) minmax(90px, .55fr) minmax(100px, .7fr);
+      align-items: center;
+      gap: 14px;
+      padding: 13px 18px
+    }
+
+    .content-table-head {
+      background: #f8fafc;
+      border-bottom: 1px solid #edf0f4;
+      color: #8a96a8;
+      font-size: 8px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .08em
+    }
+
+    .content-table-row {
+      min-height: 72px;
+      border-bottom: 1px solid #eef1f5;
+      transition: .2s ease
+    }
+
+    .content-table-row:last-child {
+      border-bottom: 0
+    }
+
+    .content-table-row:hover {
+      background: #fbfcff
+    }
+
+    .content-video {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0
+    }
+
+    .video-thumb {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #eef0ff, #f5f3ff);
+      border: 1px solid #e2e1fb;
+      color: #5b52e8;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      flex: 0 0 auto
+    }
+
+    .video-meta {
+      min-width: 0
+    }
+
+    .video-title {
+      font-size: 10px;
+      font-weight: 850;
+      color: #172033;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .video-sub {
+      font-size: 8px;
+      color: #8b96a7;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .mode-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #f5f7fa;
+      border: 1px solid #e6eaf0;
+      color: #596579;
+      font-size: 7px;
+      font-weight: 800
+    }
+
+    .progress-wrap {
+      min-width: 75px
+    }
+
+    .mini-progress {
+      height: 6px;
+      background: #edf0f5;
+      border-radius: 999px;
+      overflow: hidden
+    }
+
+    .mini-progress span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6258ea, #8b82ff)
+    }
+
+    .progress-label {
+      font-size: 7px;
+      color: #8995a7;
+      margin-top: 5px
+    }
+
+    .date-block strong {
+      display: block;
+      font-size: 8px;
+      color: #344054
+    }
+
+    .date-block small {
+      display: block;
+      font-size: 7px;
+      color: #9aa4b3;
+      margin-top: 3px
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      width: max-content;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 7px;
+      font-weight: 850
+    }
+
+    .status-badge:before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #94a3b8
+    }
+
+    .status-badge[data-status="completed"],
+    .status-badge[data-status="published"] {
+      background: #ecfdf3;
+      color: #168348
+    }
+
+    .status-badge[data-status="completed"]:before,
+    .status-badge[data-status="published"]:before {
+      background: #22c55e
+    }
+
+    .status-badge[data-status="processing"],
+    .status-badge[data-status="scheduled"] {
+      background: #eef4ff;
+      color: #3d6be8
+    }
+
+    .status-badge[data-status="processing"]:before,
+    .status-badge[data-status="scheduled"]:before {
+      background: #4f7cff
+    }
+
+    .status-badge[data-status="failed"] {
+      background: #fff1f2;
+      color: #be123c
+    }
+
+    .status-badge[data-status="failed"]:before {
+      background: #ef4444
+    }
+
+    .schedule-list {
+      padding: 5px 0
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 64px 28px minmax(0, 1fr) auto;
+      gap: 13px;
+      align-items: center;
+      padding: 14px 18px;
+      position: relative;
+      border-bottom: 1px solid #eef1f5
+    }
+
+    .timeline-row:last-child {
+      border-bottom: 0
+    }
+
+    .timeline-time {
+      text-align: right
+    }
+
+    .timeline-time strong {
+      display: block;
+      font-size: 9px;
+      color: #172033
+    }
+
+    .timeline-time small {
+      display: block;
+      font-size: 7px;
+      color: #9aa4b3;
+      margin-top: 3px
+    }
+
+    .timeline-node {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: #f0efff;
+      color: #5b52e8;
+      border: 1px solid #dedbff;
+      display: grid;
+      place-items: center;
+      font-size: 9px;
+      position: relative;
+      z-index: 2
+    }
+
+    .timeline-content {
+      min-width: 0
+    }
+
+    .timeline-title {
+      font-size: 9px;
+      font-weight: 850;
+      color: #172033;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .timeline-sub {
+      font-size: 7px;
+      color: #8995a7;
+      margin-top: 4px
+    }
+
+    .platform-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: #f5f7fa;
+      color: #64748b;
+      border: 1px solid #e5e9f0;
+      font-size: 6px;
+      font-weight: 850;
+      text-transform: uppercase;
+      margin-left: 6px
+    }
+
+    .timeline-status {
+      justify-self: end
+    }
+
+    .schedule-empty {
+      padding: 42px 20px;
+      text-align: center
+    }
+
+    .schedule-empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 10px;
+      border-radius: 14px;
+      background: #f4f6fa;
+      border: 1px solid #e7ebf0;
+      color: #94a3b8;
+      display: grid;
+      place-items: center;
+      font-size: 18px
+    }
+
+    .schedule-empty h4 {
+      font-size: 10px;
+      color: #344054;
+      font-weight: 850
+    }
+
+    .schedule-empty p {
+      font-size: 8px;
+      color: #98a2b1;
+      margin-top: 5px
+    }
+
+    @media(max-width:900px) {
+      .content-table-head {
+        display: none
+      }
+
+      .content-table-row {
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 13px 14px
+      }
+
+      .content-table-row>div:nth-child(2),
+      .content-table-row>div:nth-child(3),
+      .content-table-row>div:nth-child(4) {
+        display: none
+      }
+
+      .timeline-row {
+        grid-template-columns: 52px 28px minmax(0, 1fr);
+        gap: 10px
+      }
+
+      .timeline-status {
+        grid-column: 3;
+        justify-self: start;
+        margin-top: -5px
+      }
+
+      .timeline-content {
+        min-width: 0
+      }
+    }
+
+    @media(max-width:600px) {
+      .content-table-row {
+        grid-template-columns: 1fr
+      }
+
+      .content-table-row>div:nth-child(5) {
+        display: block
+      }
+
+      .timeline-row {
+        grid-template-columns: 45px 28px minmax(0, 1fr)
+      }
+
+      .timeline-status {
+        grid-column: 3
+      }
+
+      .timeline-time strong {
+        font-size: 8px
+      }
+    }
+
+    /* STEP 6 — social account SaaS cards */
+    .account-cards {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px
+    }
+
+    .account-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid #e5e9f0;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .035);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease
+    }
+
+    .account-card:hover {
+      transform: translateY(-3px);
+      border-color: #d8d3ff;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .08)
+    }
+
+    .account-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 15px
+    }
+
+    .account-card .account-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 10px;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .05)
+    }
+
+    .account-logo-yt {
+      background: #fff1f2;
+      color: #dc2626
+    }
+
+    .account-logo-ig {
+      background: #fdf2f8;
+      color: #db2777
+    }
+
+    .account-logo-fb {
+      background: #eff6ff;
+      color: #2563eb
+    }
+
+    .account-logo-x {
+      background: #f3f4f6;
+      color: #111827;
+      font-size: 15px !important
+    }
+
+    .account-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 7px;
+      font-weight: 850;
+      white-space: nowrap
+    }
+
+    .account-status i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: block;
+      background: #94a3b8
+    }
+
+    .account-status.is-connected {
+      background: #ecfdf3;
+      color: #15803d
+    }
+
+    .account-status.is-connected i {
+      background: #22c55e
+    }
+
+    .account-status.is-offline {
+      background: #f8fafc;
+      color: #64748b
+    }
+
+    .account-card .account-name {
+      font-size: 12px;
+      line-height: 1.3
+    }
+
+    .account-card .account-state {
+      min-height: 30px;
+      font-size: 8px;
+      line-height: 1.55;
+      margin-top: 5px;
+      color: #8995a7
+    }
+
+    .account-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 15px;
+      padding-top: 12px;
+      border-top: 1px solid #eef1f5
+    }
+
+    .account-count {
+      font-size: 7px;
+      color: #64748b;
+      font-weight: 750
+    }
+
+    .account-card .connect {
+      font-size: 8px;
+      padding: 6px 9px;
+      border: 1px solid #ddd9ff;
+      border-radius: 8px;
+      background: #f7f6ff;
+      text-decoration: none
+    }
+
+    .account-card .connect:hover {
+      background: #eeecff
+    }
+
+    @media(max-width:1200px) {
+      .account-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+    }
+
+    @media(max-width:650px) {
+      .account-cards {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px
+      }
+
+      .account-card {
+        padding: 12px
+      }
+
+      .account-card .account-logo {
+        width: 34px;
+        height: 34px
+      }
+
+      .account-status {
+        font-size: 6px;
+        padding: 4px 6px
+      }
+
+      .account-card .account-name {
+        font-size: 10px
+      }
+
+      .account-card .account-state {
+        font-size: 7px
+      }
+
+      .account-card-footer {
+        margin-top: 10px;
+        padding-top: 9px
+      }
+
+      .account-count {
+        font-size: 6px
+      }
+
+      .account-card .connect {
+        font-size: 7px;
+        padding: 5px 7px
+      }
+    }
+
+    /* STEP 7 — Analytics & AI Intelligence */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 18px;
+      margin-top: 16px
+    }
+
+    .analytics-card,
+    .intelligence-card {
+      background: var(--card, #fff);
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, .05);
+      overflow: hidden
+    }
+
+    .analytics-card-head,
+    .intelligence-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--border, #e5e7eb)
+    }
+
+    .analytics-card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ink, #0f172a)
+    }
+
+    .analytics-card-desc {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted, #64748b)
+    }
+
+    .metric-source {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, .1);
+      color: #059669
+    }
+
+    .platform-metrics {
+      padding: 8px 22px 18px
+    }
+
+    .platform-metric-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 1.3fr) .7fr .7fr .7fr;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border, #e5e7eb)
+    }
+
+    .platform-metric-row:last-child {
+      border-bottom: 0
+    }
+
+    .metric-platform {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0
+    }
+
+    .metric-platform-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+      background: #f1f5f9;
+      color: #0f172a
+    }
+
+    .metric-platform strong {
+      display: block;
+      font-size: 13px
+    }
+
+    .metric-platform small {
+      display: block;
+      color: var(--muted, #64748b);
+      font-size: 10px;
+      margin-top: 2px
+    }
+
+    .metric-value strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.1;
+      color: var(--ink, #0f172a)
+    }
+
+    .metric-value span {
+      font-size: 10px;
+      color: var(--muted, #64748b)
+    }
+
+    .metric-bar {
+      height: 6px;
+      border-radius: 99px;
+      background: #eef2f7;
+      overflow: hidden;
+      margin-top: 6px
+    }
+
+    .metric-bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: currentColor;
+      min-width: 3px
+    }
+
+    .metric-bar-cell {
+      min-width: 70px;
+      color: #10b981
+    }
+
+    .insight-stack {
+      padding: 18px
+    }
+
+    .insight-item {
+      display: flex;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border, #e5e7eb)
+    }
+
+    .insight-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0
+    }
+
+    .insight-icon {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: #f1f5f9;
+      font-size: 15px
+    }
+
+    .insight-item h4 {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink, #0f172a)
+    }
+
+    .insight-item p {
+      margin: 4px 0 0;
+      font-size: 11px;
+      line-height: 1.55;
+      color: var(--muted, #64748b)
+    }
+
+    .analytics-empty {
+      margin: 18px;
+      padding: 18px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start
+    }
+
+    .analytics-empty-icon {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      border-radius: 10px;
+      background: #e2e8f0;
+      display: grid;
+      place-items: center;
+      color: #475569
+    }
+
+    .analytics-empty strong {
+      display: block;
+      font-size: 12px;
+      color: #334155
+    }
+
+    .analytics-empty span {
+      display: block;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 3px;
+      line-height: 1.5
+    }
+
+    .trend-header {
+      display: flex;
+      align-items: center;
+      gap: 9px
+    }
+
+    .ai-badge {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, .1);
+      color: #6366f1
+    }
+
+    .intelligence-note {
+      margin: 0 18px 18px;
+      padding: 12px 13px;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55
+    }
+
+    @media(max-width:900px) {
+      .analytics-grid {
+        grid-template-columns: 1fr
+      }
+
+      .platform-metric-row {
+        grid-template-columns: 1fr 1fr 1fr
+      }
+
+      .metric-bar-cell {
+        display: none
+      }
+    }
+
+    @media(max-width:620px) {
+      .platform-metric-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px
+      }
+
+      .metric-value:nth-child(4) {
+        display: none
+      }
+
+      .analytics-card-head,
+      .intelligence-head {
+        padding: 16px
+      }
+
+      .platform-metrics {
+        padding: 6px 16px 12px
+      }
+    }
+
+
+    /* STEP 8 — Final dashboard polish */
+    .stats {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .stat {
+      min-width: 0;
+      transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease
+    }
+
+    .stat:hover {
+      transform: translateY(-2px);
+      border-color: #d8dcef;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .07)
+    }
+
+    .page-title {
+      line-height: 1.15
+    }
+
+    .page-subtitle {
+      max-width: 760px;
+      line-height: 1.55
+    }
+
+    .section-desc {
+      line-height: 1.45
+    }
+
+    .card,
+    .analytics-card,
+    .intelligence-card,
+    .performance-card {
+      overflow: hidden
+    }
+
+    .empty,
+    .analytics-empty,
+    .schedule-empty {
+      line-height: 1.5
+    }
+
+    @media(max-width:1200px) {
+      .stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr))
+      }
+    }
+
+    @media(max-width:900px) {
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+
+      .page-title {
+        font-size: 20px
+      }
+
+      .page-subtitle {
+        font-size: 10px
+      }
+    }
+
+    @media(max-width:650px) {
+      .stats {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .topbar {
+        align-items: center
+      }
+
+      .top-actions {
+        flex-shrink: 0
+      }
+
+      .icon-button {
+        display: none
+      }
+
+      .page-title {
+        font-size: 18px
+      }
+
+      .page-subtitle {
+        font-size: 9px;
+        max-width: 100%
+      }
+    }
+
+    @media(max-width:430px) {
+      .stats {
+        grid-template-columns: 1fr
+      }
+
+      .page-title {
+        font-size: 17px
+      }
+    }
+
+    /* ============================================================
+       STEP 6 — Dashboard Header Authentication UI
+       UI only — existing dashboard/backend/JS logic preserved.
+       ============================================================ */
+    .auth-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 2px;
+    }
+
+    .auth-link {
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 9px;
+      border: 1px solid #e2e7ef;
+      background: #fff;
+      color: #344054;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+      transition: .18s ease;
+    }
+
+    .auth-link:hover {
+      border-color: #cfd6e3;
+      background: #f8fafc;
+      color: #4f46e5;
+      transform: translateY(-1px);
+    }
+
+    .auth-link.auth-primary {
+      border-color: #4f46e5;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      box-shadow: 0 7px 16px rgba(79, 70, 229, .16);
+    }
+
+    .auth-link.auth-primary:hover {
+      border-color: #4338ca;
+      background: linear-gradient(135deg, #4338ca, #4f46e5);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(79, 70, 229, .22);
+    }
+
+    .auth-user {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 4px 5px 4px 8px;
+      border: 1px solid #e2e7ef;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .auth-avatar {
+      width: 27px;
+      height: 27px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+    }
+
+    .auth-username {
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #172033;
+      font-size: 9px;
+      font-weight: 850;
+    }
+
+    .auth-logout {
+      min-height: 28px;
+      padding: 0 8px;
+      border-radius: 7px;
+      color: #64748b;
+      font-size: 8px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e8ebf0;
+      background: #f8fafc;
+    }
+
+    .auth-logout:hover {
+      color: #dc2626;
+      border-color: #fecaca;
+      background: #fff1f2;
+    }
+
+    @media(max-width:650px) {
+      .auth-area {
+        gap: 5px;
+      }
+
+      .auth-link {
+        min-height: 32px;
+        padding: 0 8px;
+        font-size: 8px;
+      }
+
+      .auth-user {
+        min-height: 32px;
+        padding-left: 5px;
+      }
+
+      .auth-avatar {
+        width: 24px;
+        height: 24px;
+      }
+
+      .auth-username {
+        display: none;
+      }
+
+      .auth-logout {
+        min-height: 24px;
+        font-size: 7px;
+        padding: 0 6px;
+      }
+    }
+
+    @media(max-width:430px) {
+      .auth-link {
+        padding: 0 7px;
+        font-size: 7px;
+      }
+
+      .auth-link span {
+        display: none;
+      }
+
+      .auth-link .auth-symbol {
+        display: inline;
+        font-size: 12px;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3z" />
+            <path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16z" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-name">AI Video Repurposer</div>
+          <div class="brand-caption">AI Content Automation</div>
+        </div>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav">
+        <a href="#" class="nav-item"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
+        <a href="#create" class="nav-item"><span class="nav-icon">▣</span><span>Videos</span></a>
+        <a href="#create" class="nav-item active"><span class="nav-icon">↑</span><span>Upload Video</span></a>
+        <a href="#scheduled" class="nav-item"><span class="nav-icon">◷</span><span>Scheduled</span></a>
+        <a href="#published" class="nav-item"><span class="nav-icon">✓</span><span>Generated Clips</span></a>
+        <a href="#failed" class="nav-item"><span class="nav-icon">×</span><span>Failed</span></a>
+        <a href="#analytics" class="nav-item"><span class="nav-icon">▥</span><span>Analytics</span></a>
+        <a href="#accounts" class="nav-item"><span class="nav-icon">◎</span><span>Social Accounts</span></a>
+        <a href="#settings" class="nav-item"><span class="nav-icon">⚙</span><span>Settings</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="engine-label">Processing Engine</div>
+        <div class="engine-title">AI Repurposing Engine</div>
+        <div class="engine-status"><span class="dot"></span>System Online</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="page-title">Dashboard Overview</div>
+          <div class="page-subtitle">Manage videos, generated clips, publishing activity, connected accounts, and
+            platform performance.</div>
+        </div>
+        <div class="top-actions">
+          <div class="status-pill"><span class="dot"></span>All Systems Operational</div>
+          <button class="icon-button" type="button" aria-label="Notifications">♢</button>
+
+          <div class="auth-area">
+            {% if request.user.is_authenticated %}
+            <div class="auth-user">
+              <div class="auth-avatar">
+                {{ request.user.username|default:request.user.email|slice:":1" }}
+              </div>
+              <span class="auth-username">
+                {{ request.user.username|default:request.user.email }}
+              </span>
+              <a class="auth-logout" href="/logout/">Logout</a>
+            </div>
+            {% else %}
+            <a class="auth-link" href="/login/">
+              <span class="auth-symbol">→</span><span>Login</span>
+            </a>
+            <a class="auth-link auth-primary" href="/register/">
+              <span class="auth-symbol">+</span><span>Register</span>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </header>
+
+      <section class="stats">
+        <div class="stat">
+          <div class="stat-top"><span class="stat-label">Total Videos</span>
+            <div class="stat-icon">▣</div>
+          </div>
+          <div class="stat-value">{{ total_videos }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span class="stat-label">Processing</span>
+            <div class="stat-icon">◷</div>
+          </div>
+          <div class="stat-value">{{ processing_videos }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span class="stat-label">Scheduled</span>
+            <div class="stat-icon">◫</div>
+          </div>
+          <div class="stat-value">{{ scheduled_posts }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span class="stat-label">Published</span>
+            <div class="stat-icon">✓</div>
+          </div>
+          <div class="stat-value">{{ published_posts }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span class="stat-label">Failed</span>
+            <div class="stat-icon">×</div>
+          </div>
+          <div class="stat-value">{{ failed_posts }}</div>
+        </div>
+      </section>
+
+      <section class="dashboard-overview" aria-label="Dashboard overview">
+        <div class="overview-card overview-main">
+          <div class="overview-head">
+            <div>
+              <div class="overview-title">Social Media Overview</div>
+              <div class="overview-sub">Real publishing records from your connected platforms.</div>
+            </div>
+            <span class="count-badge">LIVE DATA</span>
+          </div>
+          <div class="overview-bars">
+            <div class="platform-mini">
+              <div class="platform-mini-top">
+                <div class="platform-dot">YT</div>
+                <div class="platform-mini-name">YouTube</div>
+              </div>
+              <div class="platform-mini-count">{{ youtube_posts }}</div>
+              <div class="platform-mini-meta">{{ youtube_published }} published</div>
+              <div class="platform-progress"><span
+                  style="width:{% if youtube_posts %}{% widthratio youtube_published youtube_posts 100 %}{% else %}0{% endif %}%"></span>
+              </div>
+            </div>
+            <div class="platform-mini">
+              <div class="platform-mini-top">
+                <div class="platform-dot">IG</div>
+                <div class="platform-mini-name">Instagram</div>
+              </div>
+              <div class="platform-mini-count">{{ instagram_posts }}</div>
+              <div class="platform-mini-meta">{{ instagram_published }} published</div>
+              <div class="platform-progress"><span
+                  style="width:{% if instagram_posts %}{% widthratio instagram_published instagram_posts 100 %}{% else %}0{% endif %}%"></span>
+              </div>
+            </div>
+            <div class="platform-mini">
+              <div class="platform-mini-top">
+                <div class="platform-dot">FB</div>
+                <div class="platform-mini-name">Facebook</div>
+              </div>
+              <div class="platform-mini-count">{{ facebook_posts }}</div>
+              <div class="platform-mini-meta">{{ facebook_published }} published</div>
+              <div class="platform-progress"><span
+                  style="width:{% if facebook_posts %}{% widthratio facebook_published facebook_posts 100 %}{% else %}0{% endif %}%"></span>
+              </div>
+            </div>
+            <div class="platform-mini">
+              <div class="platform-mini-top">
+                <div class="platform-dot">𝕏</div>
+                <div class="platform-mini-name">X</div>
+              </div>
+              <div class="platform-mini-count">{{ x_posts }}</div>
+              <div class="platform-mini-meta">{{ x_published }} published</div>
+              <div class="platform-progress"><span
+                  style="width:{% if x_posts %}{% widthratio x_published x_posts 100 %}{% else %}0{% endif %}%"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="overview-card quick-card">
+          <div class="quick-title">Quick Actions</div>
+          <div class="quick-sub">Jump straight into your workflow.</div>
+          <div class="quick-actions">
+            <a href="#create" class="quick-action"><span class="quick-icon">↑</span><span><span
+                  class="quick-label">Upload Video</span><span class="quick-note">Create new clips</span></span></a>
+            <a href="#scheduled" class="quick-action"><span class="quick-icon">◷</span><span><span
+                  class="quick-label">Scheduled</span><span class="quick-note">View upcoming posts</span></span></a>
+            <a href="#published" class="quick-action"><span class="quick-icon">✓</span><span><span
+                  class="quick-label">Published</span><span class="quick-note">Review content</span></span></a>
+            <a href="#accounts" class="quick-action"><span class="quick-icon">◎</span><span><span
+                  class="quick-label">Accounts</span><span class="quick-note">Manage connections</span></span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="card workflow-banner">
+          <div class="workflow-copy">
+            <div class="workflow-icon">⚡</div>
+            <div>
+              <h3>Choose your publishing workflow before processing</h3>
+              <p>Auto handles publishing automatically. Manual lets you decide after clips are generated.</p>
+            </div>
+          </div>
+          <div class="current-mode" id="current-mode-label">AUTO SYSTEM</div>
+        </div>
+      </section>
+
+      <section class="section" id="create">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Create & Publish</div>
+            <div class="section-desc">Upload a source video, choose the workflow, then generate your clips.</div>
+          </div>
+        </div>
+
+        <div class="create-grid">
+
+          <div class="card create-card">
+            <div class="card-head">
+              <div class="head-left">
+                <div class="head-icon">↑</div>
+                <div>
+                  <div class="head-title">Create Clips</div>
+                  <div class="head-sub">Video upload or YouTube source</div>
+                </div>
+              </div>
+              <span class="badge badge-green">READY</span>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" id="video-form">
+              {% csrf_token %}
+
+              <div class="mode-grid">
+                <label class="mode-card">
+                  <input type="radio" name="workflow_mode" value="auto" id="workflow-auto"
+       {% if form.workflow_mode.value == "auto" %}checked{% endif %}>
+                  <span class="mode-box"><span class="mode-icon">⚙</span><span><span class="mode-name">Auto
+                        System</span><span class="mode-text">Generate clips and automatically publish to selected
+                        platforms.</span></span></span>
+                </label>
+                <label class="mode-card">
+                  <input type="radio" name="workflow_mode" value="manual" id="workflow-manual"
+       {% if form.workflow_mode.value == "manual" %}checked{% endif %}>
+                  <span class="mode-box"><span class="mode-icon">☝</span><span><span class="mode-name">Manual
+                        System</span><span class="mode-text">Generate clips first, then select clips and platforms
+                        yourself.</span></span></span>
+                </label>
+              </div>
+
+              <div class="dropzone" id="dropzone" aria-label="Upload video">
+                <div>
+                  <div class="drop-icon">↑</div>
+                  <div class="drop-title">Drop your video here or click to browse</div>
+                  <div class="drop-text">Drag & drop your video here · MP4, MOV and browser-supported formats</div>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="field full">
+                  {{ form.video_file.errors }}
+                  {{ form.video_file }}
+                  <div class="selected-file" id="selected-file" style="display:none"><span>▣</span><span><strong
+                        id="selected-file-name">Video selected</strong><br><span id="selected-file-size">Ready to
+                        upload</span></span></div>
+                </div>
+                <div class="field full">
+                  <label for="{{ form.youtube_url.id_for_label }}">YouTube URL</label>
+                  {{ form.youtube_url.errors }}{{ form.youtube_url }}
+                </div>
+                <div class="field">
+                  <label for="{{ form.processing_mode.id_for_label }}">Processing Mode</label>
+                  {{ form.processing_mode.errors }}{{ form.processing_mode }}
+                </div>
+                <div class="field">
+                  <label for="{{ form.output_format.id_for_label }}">Output Format</label>
+                  {{ form.output_format.errors }}{{ form.output_format }}
+                </div>
+              </div>
+
+              <div class="auto-options" id="auto-options">
+                <div class="subhead">Auto publish platforms</div>
+                <div class="subtext">Select any combination. YouTube + Instagram + Facebook can all be selected
+                  together.</div>
+
+                <div class="platform-select-grid">
+                  <label class="platform-check"><input type="checkbox" name="auto_platforms" value="youtube"
+                      data-platform="youtube"><span class="platform-check-box">▶<span>YouTube</span></span></label>
+                  <label class="platform-check"><input type="checkbox" name="auto_platforms" value="instagram"
+                      data-platform="instagram"><span class="platform-check-box">◎<span>Instagram</span></span></label>
+                  <label class="platform-check"><input type="checkbox" name="auto_platforms" value="facebook"
+                      data-platform="facebook"><span class="platform-check-box">f<span>Facebook</span></span></label>
+                  <label class="platform-check"><input type="checkbox" name="auto_platforms" value="x"
+                      data-platform="x"><span class="platform-check-box">𝕏<span>X</span></span></label>
+                </div>
+
+                <div class="account-fields">
+                  <div class="field account-field" data-account-for="youtube">
+                    <label for="{{ form.selected_youtube_channel.id_for_label }}">YouTube Channel</label>
+                    {{ form.selected_youtube_channel.errors }}{{ form.selected_youtube_channel }}
+                  </div>
+                  <div class="field account-field" data-account-for="instagram">
+                    <label for="{{ form.selected_instagram_account.id_for_label }}">Instagram Account</label>
+                    {{ form.selected_instagram_account.errors }}{{ form.selected_instagram_account }}
+                  </div>
+                  <div class="field account-field" data-account-for="facebook">
+                    <label for="{{ form.selected_facebook_page.id_for_label }}">Facebook Page</label>
+                    {{ form.selected_facebook_page.errors }}{{ form.selected_facebook_page }}
+                  </div>
+                  <div class="field account-field" data-account-for="x">
+                    <label for="{{ form.selected_x_account.id_for_label }}">X Account</label>
+                    {{ form.selected_x_account.errors }}{{ form.selected_x_account }}
+                  </div>
+                </div>
+              </div>
+
+              {% if form.non_field_errors %}<div class="form-error show">{{ form.non_field_errors }}</div>{% endif %}
+              <div class="submit-wrap"><button class="primary-btn submit-btn" type="submit" id="submit-button">⚡
+                  Generate Clips</button></div>
+            </form>
+          </div>
+
+          <div class="card manual-card">
+            <div class="card-head">
+              <div class="head-left">
+                <div class="head-icon">☝</div>
+                <div>
+                  <div class="head-title">Manual Publish & Schedule</div>
+                  <div class="head-sub">This panel activates after processing.</div>
+                </div>
+              </div>
+              <span class="badge badge-blue">MANUAL</span>
+            </div>
+
+            {% if generated_clips %}
+            <div class="manual-ready show" id="manual-ready">
+              <div class="subhead">Clips are ready</div>
+              <div class="subtext">Go to Generated Clips below. Select one or more clips, then select one or more
+                platforms.</div>
+              <div class="selection-summary"><span class="summary-chip">{{ generated_clips|length }} clips
+                  ready</span><span class="summary-chip">Multi-platform enabled</span></div>
+              <a href="#published" class="primary-btn" style="margin-top:14px">Select Clips & Publish</a>
+            </div>
+            {% else %}
+            <div class="manual-empty" id="manual-empty">
+              <div>
+                <div class="big-icon">☝</div>
+                <h4>Manual controls are waiting</h4>
+                <p>Select <b>Manual System</b> above and generate clips. Then you can select multiple clips and multiple
+                  platforms together.</p>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      {% if video %}
+      <section class="section">
+        <div class="card processing" id="processing-card">
+          <div class="processing-head">
+            <div class="processing-left">
+              <div class="processing-icon">◷</div>
+              <div>
+                <div class="processing-title">Video Processing</div>
+                <div class="processing-stage" id="processing-stage">{{ video.processing_stage }}</div>
+              </div>
+            </div>
+            <div class="percent" id="processing-percent">{{ video.processing_progress }}%</div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-bar" style="width:{{ video.processing_progress }}%"></div>
+          </div>
+          <div class="processing-meta"><span>Video #{{ video.id }}</span><span class="processing-status"
+              id="processing-status-text">{{ video.status|title }}</span></div>
+          <div class="processing-error" id="processing-error"></div>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if generated_clips %}
+      <section class="section" id="published">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Generated Clips</div>
+            <div class="section-desc">Select multiple clips for Manual Publish or Manual Schedule.</div>
+          </div><span class="count-badge">{{ generated_clips|length }} CLIPS</span>
+        </div>
+
+        <div class="card clips-card">
+          <div class="clips-grid">
+            {% for clip in generated_clips %}
+            <div class="clip-card">
+              <label class="clip-select" title="Select Clip {{ clip.number }}"><input type="checkbox"
+                  class="manual-clip" value="{{ clip.number }}"></label>
+              <video class="clip-video" controls preload="metadata">
+                <source src="{{ clip.path }}" type="video/mp4">
+              </video>
+              <div class="clip-body">
+                <div class="clip-title">Clip {{ clip.number }}</div>
+                <div class="clip-meta"><span class="mini-chip">{{ clip.duration }} sec</span><span
+                    class="mini-chip">Score {{ clip.score }}</span></div>
+                <div class="clip-description">{{ clip.text }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="manual-controls">
+            <div class="subhead">Manual publishing controls</div>
+            <div class="subtext">Select <b>multiple platforms</b> below. All selected clips will be processed for every
+              selected platform.</div>
+
+            <div class="manual-platforms">
+              <label class="manual-platform"><input type="checkbox" name="manual_platforms" value="youtube"><span
+                  class="manual-platform-box">▶<span>YouTube</span></span></label>
+              <label class="manual-platform"><input type="checkbox" name="manual_platforms" value="instagram"><span
+                  class="manual-platform-box">◎<span>Instagram</span></span></label>
+              <label class="manual-platform"><input type="checkbox" name="manual_platforms" value="facebook"><span
+                  class="manual-platform-box">f<span>Facebook</span></span></label>
+              <label class="manual-platform"><input type="checkbox" name="manual_platforms" value="x"><span
+                  class="manual-platform-box">𝕏<span>X</span></span></label>
+            </div>
+
+            <div class="manual-controls-grid" style="margin-top:12px">
+              <div class="field"><label>YouTube Channel</label><select id="manual-youtube-account">
+                  <option value="">Select YouTube Channel</option>{% for account in youtube_channels %}<option
+                    value="{{ account.id }}">{{ account.channel_name }}</option>{% endfor %}
+                </select></div>
+              <div class="field"><label>Instagram Account</label><select id="manual-instagram-account">
+                  <option value="">Select Instagram Account</option>{% for account in instagram_accounts %}<option
+                    value="{{ account.id }}">{{ account.account_name }}</option>{% endfor %}
+                </select></div>
+              <div class="field"><label>Facebook Page</label><select id="manual-facebook-account">
+                  <option value="">Select Facebook Page</option>{% for account in facebook_pages %}<option
+                    value="{{ account.id }}">{{ account.page_name }}</option>{% endfor %}
+                </select></div>
+              <div class="field"><label>X Account</label><select id="manual-x-account">
+                  <option value="">Select X Account</option>{% for account in x_accounts %}<option
+                    value="{{ account.id }}">@{{ account.username }}</option>{% endfor %}
+                </select></div>
+            </div>
+
+            <div class="manual-controls-grid" style="margin-top:10px">
+              <div class="field"><label for="manual-date">Schedule Date</label><input type="date" id="manual-date">
+              </div>
+              <div class="field"><label for="manual-time">Schedule Time</label><input type="time" id="manual-time">
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:10px"><label for="manual-caption">Caption</label><textarea
+                id="manual-caption" rows="2" placeholder="Write a caption for scheduled posts..."></textarea></div>
+
+            <div class="manual-actions">
+              <button type="button" class="secondary-btn" id="manual-publish-btn">↑ Publish Selected Now</button>
+              <button type="button" class="primary-btn" id="manual-schedule-btn">◷ Schedule Selected</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="section" id="recent-videos">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Recent Videos</div>
+            <div class="section-desc">Latest videos processed by the system.</div>
+          </div><span class="count-badge">LATEST 8</span>
+        </div>
+        <div class="card content-table-card">
+          {% if recent_videos %}
+          <div class="content-table-head">
+            <div>Video</div>
+            <div>Workflow</div>
+            <div>Created</div>
+            <div>Progress</div>
+            <div>Status</div>
+          </div>
+          {% for item in recent_videos %}
+          <div class="content-table-row">
+            <div class="content-video">
+              <div class="video-thumb">▣</div>
+              <div class="video-meta">
+                <div class="video-title">Video #{{ item.id }}</div>
+                <div class="video-sub">AI Video Repurposer · {{ item.output_format|default:"Video"|title }}</div>
+              </div>
+            </div>
+            <div><span class="mode-chip">{{ item.processing_mode|title }} · {{ item.workflow_mode|title }}</span></div>
+            <div class="date-block"><strong>{{ item.created_at|date:"d M Y" }}</strong><small>{{ item.created_at|date:"h:i A" }}</small></div>
+            <div class="progress-wrap">
+              <div class="mini-progress"><span style="width:{{ item.processing_progress|default:0 }}%"></span></div>
+              <div class="progress-label">{{ item.processing_progress|default:0 }}% processed</div>
+            </div>
+            <div><span class="status-badge" data-status="{{ item.status|lower }}">{{ item.status|title }}</span></div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="schedule-empty">
+            <div class="schedule-empty-icon">▣</div>
+            <h4>No videos yet</h4>
+            <p>Upload a video to start generating clips.</p>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="section" id="scheduled">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Upcoming Schedule</div>
+            <div class="section-desc">Next scheduled publishing activity.</div>
+          </div><span class="count-badge">{{ scheduled_posts }} SCHEDULED</span>
+        </div>
+        <div class="card schedule-list">
+          {% if recent_scheduled_posts %}
+          {% for post in recent_scheduled_posts %}
+          <div class="timeline-row">
+            <div class="timeline-time"><strong>{{ post.scheduled_at|date:"h:i A" }}</strong><small>{{ post.scheduled_at|date:"d M" }}</small></div>
+            <div class="timeline-node">◷</div>
+            <div class="timeline-content">
+              <div class="timeline-title">{{ post.title|default:"Scheduled Post" }} <span class="platform-pill">{{ post.platform|title }}</span></div>
+              <div class="timeline-sub">Video #{{ post.video_id }} · Scheduled publishing activity</div>
+            </div>
+            <div class="timeline-status"><span class="status-badge" data-status="{{ post.status|lower }}">{{ post.status|title }}</span></div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="schedule-empty">
+            <div class="schedule-empty-icon">◷</div>
+            <h4>No upcoming posts</h4>
+            <p>Your next scheduled publishing activity will appear here.</p>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="section" id="accounts">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Connected Social Accounts</div>
+            <div class="section-desc">Accounts currently available to your publishing system.</div>
+          </div>
+        </div>
+        <div class="accounts-grid account-cards">
+          <div class="account-card">
+            <div class="account-card-top">
+              <div class="account-logo account-logo-yt">YT</div>
+              <span
+                class="account-status {% if youtube_channels %}is-connected{% else %}is-offline{% endif %}"><i></i>{% if youtube_channels %}Connected{% else %}Not connected{% endif %}</span>
+            </div>
+            <div class="account-name">YouTube</div>
+            <div class="account-state">{% if youtube_channels %}{{ youtube_channels|length }} channel{{ youtube_channels|length|pluralize }} available{% else %}Connect a YouTube channel to publish videos{% endif %}</div>
+            <div class="account-card-footer"><span class="account-count">{% if youtube_channels %}{{ youtube_channels|length }} account{{ youtube_channels|length|pluralize }}{% else %}0 accounts{% endif %}</span><a class="connect" href="{% url 'youtube_login' %}">{% if youtube_channels %}Manage{% else %}Connect{% endif %}</a></div>
+          </div>
+
+          <div class="account-card">
+            <div class="account-card-top">
+              <div class="account-logo account-logo-ig">IG</div>
+              <span
+                class="account-status {% if instagram_accounts %}is-connected{% else %}is-offline{% endif %}"><i></i>{% if instagram_accounts %}Connected{% else %}Not connected{% endif %}</span>
+            </div>
+            <div class="account-name">Instagram</div>
+            <div class="account-state">{% if instagram_accounts %}{{ instagram_accounts|length }} account{{ instagram_accounts|length|pluralize }} available{% else %}Connect Instagram to publish Reels{% endif %}
+            </div>
+            <div class="account-card-footer"><span class="account-count">{% if instagram_accounts %}{{ instagram_accounts|length }} account{{ instagram_accounts|length|pluralize }}{% else %}0 accounts{% endif %}</span><a class="connect" href="{% url 'instagram_login' %}">{% if instagram_accounts %}Manage{% else %}Connect{% endif %}</a></div>
+          </div>
+
+          <div class="account-card">
+            <div class="account-card-top">
+              <div class="account-logo account-logo-fb">FB</div>
+              <span class="account-status {% if facebook_pages %}is-connected{% else %}is-offline{% endif %}"><i></i>{% if facebook_pages %}Connected{% else %}Not connected{% endif %}</span>
+            </div>
+            <div class="account-name">Facebook</div>
+            <div class="account-state">{% if facebook_pages %}{{ facebook_pages|length }} page{{ facebook_pages|length|pluralize }} available{% else %}Connect a Facebook Page to publish{% endif %}</div>
+            <div class="account-card-footer"><span class="account-count">{% if facebook_pages %}{{ facebook_pages|length }} page{{ facebook_pages|length|pluralize }}{% else %}0 pages{% endif %}</span><a class="connect"
+                href="{% url 'facebook_login' %}">{% if facebook_pages %}Manage{% else %}Connect{% endif %}</a></div>
+          </div>
+
+          <div class="account-card">
+            <div class="account-card-top">
+              <div class="account-logo account-logo-x">𝕏</div>
+              <span class="account-status {% if x_accounts %}is-connected{% else %}is-offline{% endif %}"><i></i>{% if x_accounts %}Connected{% else %}Not connected{% endif %}</span>
+            </div>
+            <div class="account-name">X</div>
+            <div class="account-state">{% if x_accounts %}{{ x_accounts|length }} account{{ x_accounts|length|pluralize }} available{% else %}Connect X to publish posts{% endif %}</div>
+            <div class="account-card-footer"><span class="account-count">{% if x_accounts %}{{ x_accounts|length }}
+                account{{ x_accounts|length|pluralize }}{% else %}0 accounts{% endif %}</span><a class="connect"
+                href="{% url 'x_login' %}">{% if x_accounts %}Manage{% else %}Connect{% endif %}</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="analytics">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Analytics & AI Intelligence</div>
+            <div class="section-desc">Real publishing activity is shown below. Audience analytics and trend data require
+              platform API metrics.</div>
+          </div>
+          <span class="count-badge">LIVE PROJECT DATA</span>
+        </div>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <div class="analytics-card-head">
+              <div>
+                <div class="analytics-card-title">Publishing Analytics</div>
+                <div class="analytics-card-desc">Posts created and successfully published from your dashboard records.
+                </div>
+              </div><span class="metric-source">REAL DATA</span>
+            </div>
+            <div class="platform-metrics">
+              <div class="platform-metric-row" style="font-size:10px;font-weight:800;color:var(--muted,#64748b)">
+                <div>Platform</div>
+                <div>Posts</div>
+                <div>Published</div>
+                <div>Completion</div>
+              </div>
+              <div class="platform-metric-row">
+                <div class="metric-platform"><span class="metric-platform-icon">YT</span>
+                  <div><strong>YouTube</strong><small>Publishing records</small></div>
+                </div>
+                <div class="metric-value"><strong>{{ youtube_posts }}</strong><span>Total posts</span></div>
+                <div class="metric-value"><strong>{{ youtube_published }}</strong><span>Published</span></div>
+                <div class="metric-bar-cell"><span style="font-size:10px;color:#64748b">Published</span>
+                  <div class="metric-bar"><i
+                      style="width:{% if youtube_posts %}{% widthratio youtube_published youtube_posts 100 %}{% else %}0{% endif %}%"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="platform-metric-row">
+                <div class="metric-platform"><span class="metric-platform-icon">IG</span>
+                  <div><strong>Instagram</strong><small>Publishing records</small></div>
+                </div>
+                <div class="metric-value"><strong>{{ instagram_posts }}</strong><span>Total posts</span></div>
+                <div class="metric-value"><strong>{{ instagram_published }}</strong><span>Published</span></div>
+                <div class="metric-bar-cell"><span style="font-size:10px;color:#64748b">Published</span>
+                  <div class="metric-bar"><i
+                      style="width:{% if instagram_posts %}{% widthratio instagram_published instagram_posts 100 %}{% else %}0{% endif %}%"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="platform-metric-row">
+                <div class="metric-platform"><span class="metric-platform-icon">FB</span>
+                  <div><strong>Facebook</strong><small>Publishing records</small></div>
+                </div>
+                <div class="metric-value"><strong>{{ facebook_posts }}</strong><span>Total posts</span></div>
+                <div class="metric-value"><strong>{{ facebook_published }}</strong><span>Published</span></div>
+                <div class="metric-bar-cell"><span style="font-size:10px;color:#64748b">Published</span>
+                  <div class="metric-bar"><i
+                      style="width:{% if facebook_posts %}{% widthratio facebook_published facebook_posts 100 %}{% else %}0{% endif %}%"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="platform-metric-row">
+                <div class="metric-platform"><span class="metric-platform-icon">𝕏</span>
+                  <div><strong>X</strong><small>Publishing records</small></div>
+                </div>
+                <div class="metric-value"><strong>{{ x_posts }}</strong><span>Total posts</span></div>
+                <div class="metric-value"><strong>{{ x_published }}</strong><span>Published</span></div>
+                <div class="metric-bar-cell"><span style="font-size:10px;color:#64748b">Published</span>
+                  <div class="metric-bar"><i
+                      style="width:{% if x_posts %}{% widthratio x_published x_posts 100 %}{% else %}0{% endif %}%"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="intelligence-card">
+
+  <div class="intelligence-head">
+    <div class="trend-header">
+      <div class="analytics-card-title">AI Suggestions</div>
+      <span class="ai-badge">GEMINI AI</span>
+    </div>
+  </div>
+
+  {% if ai_suggestions %}
+
+  <div class="insight-stack">
+
+    {% for suggestion in ai_suggestions %}
+
+    <div class="insight-item">
+
+      <div class="insight-icon">
+        {% if suggestion.category == "Publishing" %}
+          ◷
+        {% elif suggestion.category == "Engagement" %}
+          ◎
+        {% elif suggestion.category == "Optimization" %}
+          ✦
+        {% elif suggestion.category == "Analytics" %}
+          ▥
+        {% else %}
+          ✦
+        {% endif %}
+      </div>
+
+      <div>
+
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:7px;
+          flex-wrap:wrap;
+        ">
+          <h4>{{ suggestion.title }}</h4>
+
+          {% if suggestion.category %}
+          <span style="
+            font-size:8px;
+            font-weight:800;
+            padding:4px 7px;
+            border-radius:999px;
+            background:#f1f5f9;
+            color:#475569;
+          ">
+            {{ suggestion.category }}
+          </span>
+          {% endif %}
+        </div>
+
+        <p>
+          {{ suggestion.insight }}
+        </p>
+
+        <div style="
+          margin-top:7px;
+          padding:8px 10px;
+          border-radius:9px;
+          background:#f8fafc;
+          border:1px solid #eef2f6;
+          font-size:10px;
+          line-height:1.5;
+          color:#344054;
+        ">
+          <strong>Next action:</strong>
+          {{ suggestion.action }}
+        </div>
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+  <div class="intelligence-note">
+    Suggestions are generated by Gemini using the verified dashboard data
+    available to the system. Missing platform data is not fabricated.
+  </div>
+
+  {% else %}
+
+  <div class="analytics-empty" style="margin:18px;">
+    <div class="analytics-empty-icon">✦</div>
+
+    <div>
+      <strong>AI suggestions are not available yet</strong>
+
+      <span>
+        Gemini could not generate suggestions from the currently available
+        dashboard data. Your existing publishing and processing workflow
+        continues normally.
+      </span>
+    </div>
+  </div>
+
+  {% endif %}
+
+</div>
+
+        <!-- ======================================================
+             YOUTUBE TREND INTELLIGENCE
+             ====================================================== -->
+        <div class="intelligence-card" style="margin-top:18px;">
+
+          <div class="intelligence-head">
+            <div class="trend-header">
+              <div>
+                <div class="analytics-card-title">YouTube Trend Intelligence</div>
+                <div class="analytics-card-desc" style="margin-top:4px;">
+                  India · Real YouTube most-popular data
+                </div>
+              </div>
+              <span class="ai-badge">LIVE API</span>
+            </div>
+          </div>
+
+          {% if youtube_trend_context.available %}
+
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:14px 18px;
+            border-bottom:1px solid #eef2f6;
+            flex-wrap:wrap;
+          ">
+            <div>
+              <div style="font-size:10px;font-weight:800;color:#172033;">
+                Current popular videos
+              </div>
+              <div style="font-size:8px;color:#8995a7;margin-top:3px;">
+                Verified public YouTube data · {{ youtube_trend_context.count }} videos
+              </div>
+            </div>
+            <span style="
+              font-size:8px;
+              font-weight:800;
+              padding:6px 9px;
+              border-radius:999px;
+              background:#ecfdf3;
+              color:#168348;
+              border:1px solid #c9f1d8;
+            ">
+              INDIA · LIVE
+            </span>
+          </div>
+
+          {% if youtube_trend_context.videos %}
+          <div style="padding:0 18px 18px;overflow-x:auto;">
+            <div style="min-width:720px;">
+
+              <div style="
+                display:grid;
+                grid-template-columns:44px minmax(260px,1fr) 150px 90px 90px 90px;
+                gap:10px;
+                padding:11px 10px;
+                border-bottom:1px solid #e7ebf2;
+                color:#8995a7;
+                font-size:8px;
+                font-weight:800;
+                text-transform:uppercase;
+                letter-spacing:.04em;
+              ">
+                <span>Rank</span>
+                <span>Video</span>
+                <span>Channel</span>
+                <span>Views</span>
+                <span>Likes</span>
+                <span>Comments</span>
+              </div>
+
+              {% for trend in youtube_trend_context.videos|slice:":10" %}
+              <div style="
+                display:grid;
+                grid-template-columns:44px minmax(260px,1fr) 150px 90px 90px 90px;
+                gap:10px;
+                align-items:center;
+                padding:12px 10px;
+                border-bottom:1px solid #f0f2f5;
+              ">
+                <div style="
+                  width:28px;
+                  height:28px;
+                  border-radius:9px;
+                  background:#f0efff;
+                  color:#5b52e8;
+                  display:grid;
+                  place-items:center;
+                  font-size:9px;
+                  font-weight:850;
+                ">
+                  #{{ trend.rank }}
+                </div>
+
+                <div style="min-width:0;">
+                  {% if trend.url %}
+                  <a href="{{ trend.url }}" target="_blank" rel="noopener noreferrer" style="
+                    display:block;
+                    color:#172033;
+                    font-size:9px;
+                    font-weight:800;
+                    line-height:1.45;
+                    white-space:nowrap;
+                    overflow:hidden;
+                    text-overflow:ellipsis;
+                  ">
+                    {{ trend.title }}
+                  </a>
+                  {% else %}
+                  <div style="font-size:9px;font-weight:800;color:#172033;">
+                    {{ trend.title }}
+                  </div>
+                  {% endif %}
+                </div>
+
+                <div style="
+                  min-width:0;
+                  font-size:8px;
+                  color:#64748b;
+                  white-space:nowrap;
+                  overflow:hidden;
+                  text-overflow:ellipsis;
+                ">
+                  {{ trend.channel_title|default:"Unknown channel" }}
+                </div>
+
+                <div style="font-size:9px;font-weight:800;color:#172033;">
+                  {{ trend.views|default:0 }}
+                </div>
+
+                <div style="font-size:9px;color:#475569;">
+                  {{ trend.likes|default:0 }}
+                </div>
+
+                <div style="font-size:9px;color:#475569;">
+                  {{ trend.comments|default:0 }}
+                </div>
+              </div>
+              {% endfor %}
+
+            </div>
+          </div>
+          {% else %}
+          <div class="analytics-empty" style="margin:18px;">
+            <div class="analytics-empty-icon">⌁</div>
+            <div>
+              <strong>No popular videos returned</strong>
+              <span>
+                The YouTube API is connected, but no public trend items were returned for the selected region.
+              </span>
+            </div>
+          </div>
+          {% endif %}
+
+          {% else %}
+          <div class="analytics-empty" style="margin:18px;">
+            <div class="analytics-empty-icon">⌁</div>
+            <div>
+              <strong>YouTube trend data is not available yet</strong>
+              <span>
+                {{ youtube_trend_context.error|default:"Connect a YouTube Data API key to load real India trend data." }}
+              </span>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="intelligence-note">
+            Trend data comes from YouTube's public most-popular chart. It is shown as source data; AI suggestions are generated separately.
+          </div>
+
+        </div>
+        </div>
+        {% if youtube_dashboard_analytics.available %}
+
+        {% for yt in youtube_dashboard_analytics.accounts %}
+
+        {% if yt.available %}
+
+        <div class="analytics-card" style="margin-top:18px;">
+
+          <div class="analytics-card-head">
+            <div>
+              <div class="analytics-card-title">
+                YouTube Live Analytics
+              </div>
+
+              <div class="analytics-card-desc">
+                {{ yt.account_name }} · Real YouTube API data
+              </div>
+            </div>
+
+            <span class="metric-source">
+              LIVE API
+            </span>
+          </div>
+
+
+          <div style="
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:12px;
+          padding:18px;
+        ">
+
+            <!-- Subscribers -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#f8fafc;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                Subscribers
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.subscribers }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Current channel total
+              </div>
+            </div>
+
+
+            <!-- Total Views -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#f8fafc;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                Total Channel Views
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.total_channel_views }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Lifetime channel total
+              </div>
+            </div>
+
+
+            <!-- Public Videos -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#f8fafc;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                Public Videos
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.public_video_count }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Current public video count
+              </div>
+            </div>
+
+
+            <!-- 30 Day Views -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#fff;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                30 Day Views
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.period_views }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Last {{ yt.period_days }} days
+              </div>
+            </div>
+
+
+            <!-- 30 Day Likes -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#fff;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                30 Day Likes
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.period_likes }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Last {{ yt.period_days }} days
+              </div>
+            </div>
+
+
+            <!-- 30 Day Comments -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#fff;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                30 Day Comments
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.period_comments }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Last {{ yt.period_days }} days
+              </div>
+            </div>
+
+
+            <!-- Subscriber Growth -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#fff;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                Subscriber Growth
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.net_subscribers }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Net · Last {{ yt.period_days }} days
+              </div>
+            </div>
+
+
+            <!-- Gained -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#fff;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                Subscribers Gained
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.subscribers_gained }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Last {{ yt.period_days }} days
+              </div>
+            </div>
+
+
+            <!-- Lost -->
+            <div style="
+            padding:15px;
+            border:1px solid #eaecf0;
+            border-radius:12px;
+            background:#fff;
+          ">
+              <div style="
+              font-size:10px;
+              color:#667085;
+              font-weight:700;
+            ">
+                Subscribers Lost
+              </div>
+
+              <div style="
+              margin-top:7px;
+              font-size:22px;
+              font-weight:800;
+              color:#101828;
+            ">
+                {{ yt.subscribers_lost }}
+              </div>
+
+              <div style="
+              margin-top:4px;
+              font-size:9px;
+              color:#98a2b3;
+            ">
+                Last {{ yt.period_days }} days
+              </div>
+            </div>
+
+          </div>
+
+          <div style="
+          padding:0 18px 18px;
+          font-size:9px;
+          color:#98a2b3;
+        ">
+            Source: YouTube Data API + YouTube Analytics API ·
+            {{ yt.period_days }}-day reporting period
+          </div>
+
+        </div>
+
+        {% endif %}
+
+        {% endfor %}
+
+        {% else %}
+
+        <div class="analytics-empty">
+          <div class="analytics-empty-icon">!</div>
+
+          <div>
+            <strong>YouTube Analytics is unavailable</strong>
+
+            <span>
+              The connected YouTube account does not currently provide
+              verified analytics data to the dashboard.
+            </span>
+          </div>
+        </div>
+
+        {% endif %}
+      </section>
+      <section class="section" id="failed">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Failed Publishing</div>
+            <div class="section-desc">Latest failed platform operations.</div>
+          </div><span class="count-badge">{{ failed_posts }} FAILED</span>
+        </div>
+        <div class="card schedule-card">
+          {% if recent_failed_posts %}
+          {% for post in recent_failed_posts %}
+          <div class="schedule-row">
+            <div class="schedule-thumb">×</div>
+            <div>
+              <div class="schedule-name">{{ post.title|default:"Failed Post" }}</div>
+              <div class="schedule-sub">Video #{{ post.video_id }} · {{ post.platform|title }}</div>
+            </div>
+            <div class="schedule-sub">{{ post.updated_at|date:"d M Y" }}</div>
+            <div class="schedule-sub">{{ post.updated_at|date:"h:i A" }}</div>
+            <div class="schedule-status" style="background:rgba(239,68,68,.1);color:#fca5a5">Failed</div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="empty">
+            <div class="empty-icon">✓</div>No failed publishing records.
+          </div>
+          {% endif %}
+        </div>
+      </section>
+      <section class="section" id="settings">
+        <div class="card empty">
+          <div class="empty-icon">⚙</div>Settings will use the existing project configuration.
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="toast" id="toast">
+    <div class="toast-title" id="toast-title"></div>
+    <div class="toast-text" id="toast-text"></div>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+
+    function toast(title, text, type = "success") {
+      const el = $("#toast"); $("#toast-title").textContent = title; $("#toast-text").textContent = text;
+      el.className = "toast show " + type;
+      clearTimeout(window.__toastTimer); window.__toastTimer = setTimeout(() => el.className = "toast", 4200);
+    }
+
+    /* Workflow selector */
+    const autoRadio = $("#workflow-auto"), manualRadio = $("#workflow-manual");
+    const modeLabel = $("#current-mode-label"), autoOptions = $("#auto-options");
+
+    function updateWorkflowUI() {
+      const auto = autoRadio?.checked;
+      if (modeLabel) modeLabel.textContent = auto ? "AUTO SYSTEM" : "MANUAL SYSTEM";
+      if (autoOptions) autoOptions.style.display = auto ? "block" : "none";
+      $$(".account-field").forEach(el => el.classList.add("hidden"));
+      if (auto) {
+        $$("[data-platform]").forEach(cb => {
+          const field = document.querySelector(`[data-account-for="${cb.dataset.platform}"]`);
+          if (field) field.classList.toggle("hidden", !cb.checked);
+        });
+      }
+    }
+    [autoRadio, manualRadio].forEach(el => el?.addEventListener("change", updateWorkflowUI));
+    $$("[data-platform]").forEach(cb => cb.addEventListener("change", updateWorkflowUI));
+    updateWorkflowUI();
+
+    /* Upload dropzone */
+    const drop = $("#dropzone"), fileInput = $("#id_video_file");
+    drop?.addEventListener("click", () => fileInput?.click());
+    drop?.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("dragover") });
+    drop?.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+    drop?.addEventListener("drop", e => {
+      e.preventDefault(); drop.classList.remove("dragover");
+      if (fileInput && e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event("change", { bubbles: true })) }
+    });
+    fileInput?.addEventListener("change", () => {
+      if (!fileInput.files.length) return;
+      const file = fileInput.files[0];
+      $(".drop-title").textContent = file.name;
+      const selected = $("#selected-file"), name = $("#selected-file-name"), size = $("#selected-file-size");
+      if (selected) selected.style.display = "flex";
+      if (name) name.textContent = file.name;
+      if (size) size.textContent = (file.size / (1024 * 1024)).toFixed(2) + " MB · Ready to upload";
+    });
+
+    /* Form protection */
+    const form = $("#video-form"), submit = $("#submit-button");
+    form?.addEventListener("submit", () => {
+      submit.disabled = true; submit.innerHTML = "◷ Starting AI Processing...";
+    });
+
+    /* Manual multi-select */
+    function selectedClips() { return [...$$(".manual-clip:checked")].map(x => x.value) }
+    function selectedPlatforms() { return [...$$('input[name="manual_platforms"]:checked')].map(x => x.value) }
+
+    function accountValue(platform) {
+      const ids = { youtube: "#manual-youtube-account", instagram: "#manual-instagram-account", facebook: "#manual-facebook-account", x: "#manual-x-account" };
+      return $(ids[platform])?.value || "";
+    }
+    function validateManual(schedule = false) {
+      const clips = selectedClips(), platforms = selectedPlatforms();
+      if (!clips.length) { toast("Select clips", "Select at least one generated clip.", "error"); return null }
+      if (!platforms.length) { toast("Select platforms", "You can select YouTube, Instagram and Facebook together.", "error"); return null }
+      for (const p of platforms) {
+        if (!accountValue(p)) { toast("Select account", `Select the ${p} account/page first.`, "error"); return null }
+      }
+      let scheduledAt = "";
+      if (schedule) {
+        const d = $("#manual-date")?.value, t = $("#manual-time")?.value;
+        if (!d || !t) { toast("Schedule time missing", "Select both date and time.", "error"); return null }
+        scheduledAt = d + "T" + t;
+      }
+      return { clips, platforms, scheduledAt }
+    }
+    async function manualRequest(url, schedule = false) {
+      const data = validateManual(schedule); if (!data) return;
+
+      const publishButton = $("#manual-publish-btn");
+      const scheduleButton = $("#manual-schedule-btn");
+      const activeButton = schedule ? scheduleButton : publishButton;
+      const originalText = activeButton?.innerHTML || "";
+
+      if (publishButton) publishButton.disabled = true;
+      if (scheduleButton) scheduleButton.disabled = true;
+      if (activeButton) activeButton.innerHTML = schedule ? "◷ Scheduling..." : "↑ Publishing...";
+
+      const body = new URLSearchParams();
+      body.append("video_id", "{{ video.id|default:'' }}");
+      data.clips.forEach(x => body.append("clip_numbers", x));
+      data.platforms.forEach(x => body.append("platforms", x));
+      body.append("youtube_channel", accountValue("youtube"));
+      body.append("instagram_account", accountValue("instagram"));
+      body.append("facebook_page", accountValue("facebook"));
+      body.append("x_account", accountValue("x"));
+
+      if (schedule) {
+        body.append("scheduled_at", data.scheduledAt);
+        body.append("caption", $("#manual-caption")?.value || "Generated by AI Video Repurposer.");
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body,
+          credentials: "same-origin"
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        const result = contentType.includes("application/json")
+          ? await response.json()
+          : { success: false, error: `Server returned HTTP ${response.status}.` };
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || "Request failed.");
+        }
+
+        const failed = (result.results || []).filter(x => x.status === "failed").length;
+        toast(
+          schedule ? "Schedule created" : "Publishing completed",
+          failed
+            ? `${failed} operation(s) failed. Check the result.`
+            : "All selected clip/platform operations completed."
+        );
+
+        setTimeout(() => window.location.reload(), 900);
+      } catch (err) {
+        toast("Action failed", err.message || "Request failed.", "error");
+        if (publishButton) publishButton.disabled = false;
+        if (scheduleButton) scheduleButton.disabled = false;
+        if (activeButton) activeButton.innerHTML = originalText;
+      }
+    }
+
+    $("#manual-publish-btn")?.addEventListener("click", () => manualRequest("{% url 'manual_publish' %}", false));
+    $("#manual-schedule-btn")?.addEventListener("click", () => manualRequest("{% url 'manual_schedule' %}", true));
+
+    /* Selected clip visual state */
+    $$(".manual-clip").forEach(cb => cb.addEventListener("change", () => {
+      const card = cb.closest(".clip-card"); card?.classList.toggle("selected", cb.checked);
+    }));
+
+    /* Processing status */
+    {% if video %}
+    const statusUrl = "{% url 'processing_status' video.id %}";
+    const bar = $("#progress-bar"), pct = $("#processing-percent"), stage = $("#processing-stage"), status = $("#processing-status-text"), err = $("#processing-error");
+    let timer = null, reloadQueued = false;
+    async function checkStatus() {
+      try {
+        const r = await fetch(statusUrl, { headers: { "X-Requested-With": "XMLHttpRequest", "Cache-Control": "no-cache" }, cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json(), p = Number(d.progress || 0);
+        if (bar) bar.style.width = p + "%"; if (pct) pct.textContent = p + "%"; if (stage) stage.textContent = d.stage || "Processing..."; if (status) status.textContent = d.status || "Processing";
+        if (d.failed) {
+          if (err) {
+            err.textContent = d.stage || "Video processing failed.";
+            err.classList.add("show");
+          }
+          clearInterval(timer);
+          timer = null;
+        }
+
+        if (d.completed || ["completed", "failed", "published"].includes(String(d.status || "").toLowerCase())) {
+          clearInterval(timer);
+          timer = null;
+        }
+      } catch (e) { console.error("Processing status:", e) }
+    }
+    checkStatus(); timer = setInterval(checkStatus, 1000);
+    {% endif %}
+
+    /* Nav active state */
+    $$(".nav-item").forEach(item => item.addEventListener("click", () => {
+      $$(".nav-item").forEach(x => x.classList.remove("active")); item.classList.add("active");
+    }));
+  </script>
+</body>
+
+</html>
