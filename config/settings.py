@@ -48,32 +48,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
-
-    # Previous Quick Tunnel hosts
-    'fragrances-treo-microwave-prospect.trycloudflare.com',
-    'nebraska-males-schedules-culture.trycloudflare.com',
-    'man-pest-mutual-marketplace.trycloudflare.com',
-    'midi-consultants-curve-pubs.trycloudflare.com',
-    'completely-ecommerce-leader-dinner.trycloudflare.com',
-    'visited-royal-detective-delayed.trycloudflare.com',
-    'drew-pilot-catch-expectations.trycloudflare.com',
-    'conversation-interactive-theater-preferences.trycloudflare.com',
-    'brother-lift-objects-greene.trycloudflare.com',
-    'julie-related-horizontal-never.trycloudflare.com',
-    'various-reflects-discover-tiles.trycloudflare.com',
-    'monica-policies-wales-citizenship.trycloudflare.com',
-
-    # Current Quick Tunnel
-    'illustrations-find-prefer-commercial.trycloudflare.com',
-    'charter-northeast-groove-prevent.trycloudflare.com',
-    'heather-exciting-invisible-spyware.trycloudflare.com',
-    'frankfurt-cheaper-hospital-input.trycloudflare.com',
-    'der-speaks-enjoy-feedback.trycloudflare.com',
-    'specs-joined-kodak-compute.trycloudflare.com',
-    'gps-acting-physical-unsubscribe.trycloudflare.com',
-    'maryland-liverpool-routes-spreading.trycloudflare.com',
-    'consolidation-metabolism-placing-pensions.trycloudflare.com',
-    'tips-purposes-motherboard-salvation.trycloudflare.com'
+    "ai-video-repurposer.onrender.com"
 ]
 
 
