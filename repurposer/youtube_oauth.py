@@ -1,9 +1,10 @@
+import json
+import os
 from pathlib import Path
 
 from django.conf import settings
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import AuthorizedSession
-from googleapiclient.discovery import build
 
 from .models import YouTubeCredential
 
@@ -17,11 +18,42 @@ YOUTUBE_SCOPES = [
 ]
 
 
-def get_client_secret_file():
+def get_client_config():
     """
-    Find the Google OAuth client secret JSON file.
+    Get Google OAuth client configuration.
+
+    Priority:
+    1. Render/production environment variables
+    2. Local credentials/*.json file
+
+    This keeps local development working while allowing
+    Render deployment without uploading the OAuth JSON file
+    to GitHub.
     """
 
+    google_client_id = os.getenv(
+        "GOOGLE_CLIENT_ID"
+    )
+
+    google_client_secret = os.getenv(
+        "GOOGLE_CLIENT_SECRET"
+    )
+
+    if google_client_id and google_client_secret:
+        return {
+            "web": {
+                "client_id": google_client_id,
+                "client_secret": google_client_secret,
+                "auth_uri": (
+                    "https://accounts.google.com/o/oauth2/auth"
+                ),
+                "token_uri": (
+                    "https://oauth2.googleapis.com/token"
+                ),
+            }
+        }
+
+    # Local development fallback
     credentials_directory = (
         Path(settings.BASE_DIR) / "credentials"
     )
@@ -32,11 +64,36 @@ def get_client_secret_file():
 
     if not json_files:
         raise FileNotFoundError(
-            "No OAuth client secret JSON file found "
-            "inside the credentials folder."
+            "Google OAuth credentials not found. "
+            "Set GOOGLE_CLIENT_ID and "
+            "GOOGLE_CLIENT_SECRET environment variables "
+            "or place the OAuth client JSON file inside "
+            "the credentials folder."
         )
 
-    return json_files[0]
+    with open(
+        json_files[0],
+        "r",
+        encoding="utf-8",
+    ) as file:
+        return json.load(file)
+
+
+def get_redirect_uri():
+    """
+    Get the OAuth callback URL.
+
+    Production:
+    Set YOUTUBE_REDIRECT_URI in Render.
+
+    Local:
+    Falls back to the local development callback.
+    """
+
+    return os.getenv(
+        "YOUTUBE_REDIRECT_URI",
+        "http://127.0.0.1:8000/youtube/callback/",
+    )
 
 
 def create_youtube_oauth_flow():
@@ -44,14 +101,12 @@ def create_youtube_oauth_flow():
     Create the Google YouTube OAuth flow.
     """
 
-    client_secret_file = get_client_secret_file()
+    client_config = get_client_config()
 
-    flow = Flow.from_client_secrets_file(
-        str(client_secret_file),
+    flow = Flow.from_client_config(
+        client_config,
         scopes=YOUTUBE_SCOPES,
-        redirect_uri=(
-            "http://127.0.0.1:8000/youtube/callback/"
-        ),
+        redirect_uri=get_redirect_uri(),
     )
 
     return flow
