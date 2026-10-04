@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 import os
 
 from dotenv import load_dotenv
@@ -28,7 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ============================================================
 
 load_dotenv(BASE_DIR / '.env')
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+GEMINI_API_KEY = os.environ.get(
+    "GEMINI_API_KEY",
+    ""
+)
+
 YOUTUBE_API_KEY = os.environ.get(
     "YOUTUBE_API_KEY",
     ""
@@ -38,13 +44,19 @@ YOUTUBE_API_KEY = os.environ.get(
 # ============================================================
 # SECURITY
 # ============================================================
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-s)axf##a)*&$-ml4fq-^l5h0c7@j9)i*e8f=pdawl_cd*2-v3b")
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-s)axf##a)*&$-ml4fq-^l5h0c7@j9)i*e8f=pdawl_cd*2-v3b"
+)
+
 DEBUG = True
 
 
 # ============================================================
 # APPLICATION / HOST SETTINGS
 # ============================================================
+
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
@@ -88,24 +100,7 @@ MIDDLEWARE = [
 # ============================================================
 
 CSRF_TRUSTED_ORIGINS = [
-    # Current Quick Tunnel
-    'https://charter-northeast-groove-prevent.trycloudflare.com',
-    'https://illustrations-find-prefer-commercial.trycloudflare.com',
-    'https://der-speaks-enjoy-feedback.trycloudflare.com',
-    'https://specs-joined-kodak-compute.trycloudflare.com',
-    'https://gps-acting-physical-unsubscribe.trycloudflare.com',
-    'https://maryland-liverpool-routes-spreading.trycloudflare.com',
-    # Previous Quick Tunnel hosts
-    'https://monica-policies-wales-citizenship.trycloudflare.com',
-    'https://drew-pilot-catch-expectations.trycloudflare.com',
-    'https://conversation-interactive-theater-preferences.trycloudflare.com',
-    'https://brother-lift-objects-greene.trycloudflare.com',
-    'https://various-reflects-discover-tiles.trycloudflare.com',
-    'https://julie-related-horizontal-never.trycloudflare.com',
-    'https://midi-consultants-curve-pubs.trycloudflare.com',    
-    'https://heather-exciting-invisible-spyware.trycloudflare.com',
-    'https://frankfurt-cheaper-hospital-input.trycloudflare.com',
-    'https://tips-purposes-motherboard-salvation.trycloudflare.com'
+    'https://ai-video-repurposer.onrender.com'
 ]
 
 
@@ -142,12 +137,53 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL"
+)
+
+if DATABASE_URL:
+    parsed_database_url = urlparse(
+        DATABASE_URL
+    )
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': (
+                parsed_database_url.path.lstrip('/')
+            ),
+            'USER': (
+                unquote(
+                    parsed_database_url.username
+                    or ''
+                )
+            ),
+            'PASSWORD': (
+                unquote(
+                    parsed_database_url.password
+                    or ''
+                )
+            ),
+            'HOST': (
+                parsed_database_url.hostname
+                or ''
+            ),
+            'PORT': (
+                parsed_database_url.port
+                or 5432
+            ),
+        }
     }
-}
+
+else:
+    # Local development
+    # continues using SQLite.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # ============================================================
@@ -227,31 +263,41 @@ MEDIA_ROOT = BASE_DIR / 'media'
 #
 # Never put the Gmail password directly in this file.
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = (
+    'django.core.mail.backends.smtp.EmailBackend'
+)
+
 EMAIL_HOST = os.environ.get(
     'EMAIL_HOST',
     'smtp.gmail.com',
 )
+
 EMAIL_PORT = int(
     os.environ.get(
         'EMAIL_PORT',
         '587',
     )
 )
+
 EMAIL_USE_TLS = True
+
 EMAIL_HOST_USER = os.environ.get(
     'EMAIL_HOST_USER',
     '',
 )
+
 EMAIL_HOST_PASSWORD = os.environ.get(
     'EMAIL_HOST_PASSWORD',
     '',
 )
+
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL',
     EMAIL_HOST_USER,
 )
+
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
 EMAIL_TIMEOUT = 20
 
 
@@ -290,7 +336,7 @@ INSTAGRAM_APP_SECRET = os.environ.get(
 # ============================================================
 
 INSTAGRAM_REDIRECT_URI = (
-    'https://tips-purposes-motherboard-salvation.trycloudflare.com'
+    'https://ai-video-repurposer.onrender.com'
     '/instagram/callback/'
 )
 
@@ -309,7 +355,7 @@ FACEBOOK_LOGIN_CONFIG_ID = (
 # ============================================================
 
 FACEBOOK_REDIRECT_URI = (
-    'https://tips-purposes-motherboard-salvation.trycloudflare.com'
+    'https://ai-video-repurposer.onrender.com'
     '/facebook/callback/'
 )
 
@@ -317,6 +363,7 @@ FACEBOOK_REDIRECT_URI = (
 # ============================================================
 # X OAUTH REDIRECT URI
 # ============================================================
+
 X_CLIENT_ID = os.environ.get(
     'X_CLIENT_ID',
     ''
@@ -328,7 +375,7 @@ X_CLIENT_SECRET = os.environ.get(
 )
 
 X_REDIRECT_URI = (
-    'https://tips-purposes-motherboard-salvation.trycloudflare.com/'
+    'https://ai-video-repurposer.onrender.com/'
     'x/callback/'
 )
 
@@ -338,11 +385,16 @@ X_REDIRECT_URI = (
 # ============================================================
 
 PUBLIC_BASE_URL = (
-     'https://tips-purposes-motherboard-salvation.trycloudflare.com'
+    'https://ai-video-repurposer.onrender.com'
 )
 
 
-# Authentication
+# ============================================================
+# AUTHENTICATION
+# ============================================================
+
 LOGIN_URL = "/login/"
+
 LOGIN_REDIRECT_URL = "/"
+
 LOGOUT_REDIRECT_URL = "/"

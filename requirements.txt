@@ -10,3 +10,5 @@ APScheduler==3.11.3
 google-genai==2.25.0
 openai-whisper==20250625
 gunicorn==26.2.0
+psycopg==3.3.6
+psycopg-binary==3.3.6
