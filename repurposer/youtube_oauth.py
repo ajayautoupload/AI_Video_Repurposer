@@ -92,7 +92,7 @@ def get_redirect_uri():
 
     return os.getenv(
         "YOUTUBE_REDIRECT_URI",
-        "http://127.0.0.1:8000/youtube/callback/",
+        "https://ai-video-repurposer.onrender.com/youtube/callback/",
     )
 
 

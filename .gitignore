@@ -27,3 +27,7 @@ processed/
 # Django generated files
 staticfiles/out/
 out/
+
+# Database dumps
+old_data.json
+render_before_import.json

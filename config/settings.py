@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ENVIRONMENT VARIABLES
 # ============================================================
 
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / ".env")
 
 GEMINI_API_KEY = os.environ.get(
     "GEMINI_API_KEY",
@@ -58,9 +58,9 @@ DEBUG = True
 # ============================================================
 
 ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    "ai-video-repurposer.onrender.com"
+    "127.0.0.1",
+    "localhost",
+    "ai-video-repurposer.onrender.com",
 ]
 
 
@@ -69,14 +69,14 @@ ALLOWED_HOSTS = [
 # ============================================================
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 
-    'repurposer',
+    "repurposer",
 ]
 
 
@@ -85,13 +85,13 @@ INSTALLED_APPS = [
 # ============================================================
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 
@@ -100,7 +100,7 @@ MIDDLEWARE = [
 # ============================================================
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://ai-video-repurposer.onrender.com'
+    "https://ai-video-repurposer.onrender.com",
 ]
 
 
@@ -108,9 +108,9 @@ CSRF_TRUSTED_ORIGINS = [
 # URL / WSGI
 # ============================================================
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # ============================================================
@@ -119,14 +119,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -137,51 +137,42 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 
 if DATABASE_URL:
-    parsed_database_url = urlparse(
-        DATABASE_URL
-    )
+    parsed_database_url = urlparse(DATABASE_URL)
 
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': (
-                parsed_database_url.path.lstrip('/')
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": (
+                parsed_database_url.path.lstrip("/")
             ),
-            'USER': (
+            "USER": (
                 unquote(
-                    parsed_database_url.username
-                    or ''
+                    parsed_database_url.username or ""
                 )
             ),
-            'PASSWORD': (
+            "PASSWORD": (
                 unquote(
-                    parsed_database_url.password
-                    or ''
+                    parsed_database_url.password or ""
                 )
             ),
-            'HOST': (
-                parsed_database_url.hostname
-                or ''
+            "HOST": (
+                parsed_database_url.hostname or ""
             ),
-            'PORT': (
-                parsed_database_url.port
-                or 5432
+            "PORT": (
+                parsed_database_url.port or 5432
             ),
         }
     }
 
 else:
-    # Local development
-    # continues using SQLite.
+    # Local development continues using SQLite.
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -192,27 +183,27 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': (
-            'django.contrib.auth.password_validation.'
-            'UserAttributeSimilarityValidator'
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
         ),
     },
     {
-        'NAME': (
-            'django.contrib.auth.password_validation.'
-            'MinimumLengthValidator'
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "MinimumLengthValidator"
         ),
     },
     {
-        'NAME': (
-            'django.contrib.auth.password_validation.'
-            'CommonPasswordValidator'
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "CommonPasswordValidator"
         ),
     },
     {
-        'NAME': (
-            'django.contrib.auth.password_validation.'
-            'NumericPasswordValidator'
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "NumericPasswordValidator"
         ),
     },
 ]
@@ -222,9 +213,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # INTERNATIONALIZATION
 # ============================================================
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'Asia/Kolkata'
+TIME_ZONE = "Asia/Kolkata"
 
 USE_I18N = True
 
@@ -235,10 +226,10 @@ USE_TZ = True
 # STATIC FILES
 # ============================================================
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    BASE_DIR / "static",
 ]
 
 
@@ -246,53 +237,45 @@ STATICFILES_DIRS = [
 # MEDIA FILES
 # ============================================================
 
-MEDIA_URL = 'media/'
+MEDIA_URL = "media/"
 
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = BASE_DIR / "media"
 
 
 # ============================================================
 # EMAIL
 # ============================================================
-# Gmail SMTP configuration.
-#
-# Keep the real Gmail address and Gmail App Password in .env:
-#
-# EMAIL_HOST_USER=your-real-gmail@gmail.com
-# EMAIL_HOST_PASSWORD=your-16-character-app-password
-#
-# Never put the Gmail password directly in this file.
 
 EMAIL_BACKEND = (
-    'django.core.mail.backends.smtp.EmailBackend'
+    "django.core.mail.backends.smtp.EmailBackend"
 )
 
 EMAIL_HOST = os.environ.get(
-    'EMAIL_HOST',
-    'smtp.gmail.com',
+    "EMAIL_HOST",
+    "smtp.gmail.com",
 )
 
 EMAIL_PORT = int(
     os.environ.get(
-        'EMAIL_PORT',
-        '587',
+        "EMAIL_PORT",
+        "587",
     )
 )
 
 EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = os.environ.get(
-    'EMAIL_HOST_USER',
-    '',
+    "EMAIL_HOST_USER",
+    "",
 )
 
 EMAIL_HOST_PASSWORD = os.environ.get(
-    'EMAIL_HOST_PASSWORD',
-    '',
+    "EMAIL_HOST_PASSWORD",
+    "",
 )
 
 DEFAULT_FROM_EMAIL = os.environ.get(
-    'DEFAULT_FROM_EMAIL',
+    "DEFAULT_FROM_EMAIL",
     EMAIL_HOST_USER,
 )
 
@@ -306,13 +289,13 @@ EMAIL_TIMEOUT = 20
 # ============================================================
 
 META_APP_ID = os.environ.get(
-    'META_APP_ID',
-    ''
+    "META_APP_ID",
+    ""
 )
 
 META_APP_SECRET = os.environ.get(
-    'META_APP_SECRET',
-    ''
+    "META_APP_SECRET",
+    ""
 )
 
 
@@ -321,13 +304,13 @@ META_APP_SECRET = os.environ.get(
 # ============================================================
 
 INSTAGRAM_APP_ID = os.environ.get(
-    'INSTAGRAM_APP_ID',
-    '37792592507055727'
+    "INSTAGRAM_APP_ID",
+    "37792592507055727"
 )
 
 INSTAGRAM_APP_SECRET = os.environ.get(
-    'INSTAGRAM_APP_SECRET',
-    ''
+    "INSTAGRAM_APP_SECRET",
+    ""
 )
 
 
@@ -336,8 +319,8 @@ INSTAGRAM_APP_SECRET = os.environ.get(
 # ============================================================
 
 INSTAGRAM_REDIRECT_URI = (
-    'https://ai-video-repurposer.onrender.com'
-    '/instagram/callback/'
+    "https://ai-video-repurposer.onrender.com"
+    "/instagram/callback/"
 )
 
 
@@ -346,7 +329,7 @@ INSTAGRAM_REDIRECT_URI = (
 # ============================================================
 
 FACEBOOK_LOGIN_CONFIG_ID = (
-    '2549317355493004'
+    "2549317355493004"
 )
 
 
@@ -355,28 +338,28 @@ FACEBOOK_LOGIN_CONFIG_ID = (
 # ============================================================
 
 FACEBOOK_REDIRECT_URI = (
-    'https://ai-video-repurposer.onrender.com'
-    '/facebook/callback/'
+    "https://ai-video-repurposer.onrender.com"
+    "/facebook/callback/"
 )
 
 
 # ============================================================
-# X OAUTH REDIRECT URI
+# X OAUTH SETTINGS
 # ============================================================
 
 X_CLIENT_ID = os.environ.get(
-    'X_CLIENT_ID',
-    ''
+    "X_CLIENT_ID",
+    ""
 )
 
 X_CLIENT_SECRET = os.environ.get(
-    'X_CLIENT_SECRET',
-    ''
+    "X_CLIENT_SECRET",
+    ""
 )
 
 X_REDIRECT_URI = (
-    'https://ai-video-repurposer.onrender.com/'
-    'x/callback/'
+    "https://ai-video-repurposer.onrender.com/"
+    "x/callback/"
 )
 
 
@@ -385,7 +368,7 @@ X_REDIRECT_URI = (
 # ============================================================
 
 PUBLIC_BASE_URL = (
-    'https://ai-video-repurposer.onrender.com'
+    "https://ai-video-repurposer.onrender.com"
 )
 
 

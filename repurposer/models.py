@@ -19,6 +19,7 @@ class Video(models.Model):
     # Video source
     video_file = models.FileField(
         upload_to='videos/',
+        max_length=500,
         blank=True,
         null=True
     )
