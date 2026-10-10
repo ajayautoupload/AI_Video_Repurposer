@@ -17,3 +17,4 @@ av==16.0.1
 celery==5.6.3
 redis==8.1.0
 
+django-ratelimit==4.1.0
