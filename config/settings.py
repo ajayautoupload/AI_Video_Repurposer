@@ -30,10 +30,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
+
 GEMINI_API_KEY = os.environ.get(
     "GEMINI_API_KEY",
     ""
 )
+
 
 YOUTUBE_API_KEY = os.environ.get(
     "YOUTUBE_API_KEY",
@@ -45,12 +47,23 @@ YOUTUBE_API_KEY = os.environ.get(
 # SECURITY
 # ============================================================
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-s)axf##a)*&$-ml4fq-^l5h0c7@j9)i*e8f=pdawl_cd*2-v3b"
-)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
-DEBUG = True
+if not SECRET_KEY:
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY environment variable is required."
+    )
+
+
+DEBUG = os.environ.get(
+    "DEBUG",
+    "False"
+).strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 
 
 # ============================================================
@@ -92,6 +105,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_ratelimit.middleware.RatelimitMiddleware",
 ]
 
 
@@ -138,6 +152,7 @@ TEMPLATES = [
 # ============================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
 
 if DATABASE_URL:
     parsed_database_url = urlparse(DATABASE_URL)
@@ -250,10 +265,12 @@ EMAIL_BACKEND = (
     "django.core.mail.backends.smtp.EmailBackend"
 )
 
+
 EMAIL_HOST = os.environ.get(
     "EMAIL_HOST",
     "smtp.gmail.com",
 )
+
 
 EMAIL_PORT = int(
     os.environ.get(
@@ -262,24 +279,30 @@ EMAIL_PORT = int(
     )
 )
 
+
 EMAIL_USE_TLS = True
+
 
 EMAIL_HOST_USER = os.environ.get(
     "EMAIL_HOST_USER",
     "",
 )
 
+
 EMAIL_HOST_PASSWORD = os.environ.get(
     "EMAIL_HOST_PASSWORD",
     "",
 )
+
 
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
     EMAIL_HOST_USER,
 )
 
+
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
 
 EMAIL_TIMEOUT = 20
 
@@ -292,6 +315,7 @@ META_APP_ID = os.environ.get(
     "META_APP_ID",
     ""
 )
+
 
 META_APP_SECRET = os.environ.get(
     "META_APP_SECRET",
@@ -307,6 +331,7 @@ INSTAGRAM_APP_ID = os.environ.get(
     "INSTAGRAM_APP_ID",
     "37792592507055727"
 )
+
 
 INSTAGRAM_APP_SECRET = os.environ.get(
     "INSTAGRAM_APP_SECRET",
@@ -352,10 +377,12 @@ X_CLIENT_ID = os.environ.get(
     ""
 )
 
+
 X_CLIENT_SECRET = os.environ.get(
     "X_CLIENT_SECRET",
     ""
 )
+
 
 X_REDIRECT_URI = (
     "https://ai-video-repurposer.onrender.com/"
@@ -381,3 +408,61 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 
 LOGOUT_REDIRECT_URL = "/"
+
+
+# ============================================================
+# DJANGO CACHE / RATE LIMITING
+# ============================================================
+
+if os.environ.get("REDIS_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.environ.get("REDIS_URL"),
+        }
+    }
+
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "ai-video-repurposer-local-cache",
+        }
+    }
+
+
+# ============================================================
+# CELERY
+# ============================================================
+
+CELERY_BROKER_URL = os.environ.get(
+    "REDIS_URL",
+    ""
+)
+
+
+CELERY_RESULT_BACKEND = os.environ.get(
+    "REDIS_URL",
+    ""
+)
+
+
+CELERY_ACCEPT_CONTENT = [
+    "json",
+]
+
+
+CELERY_TASK_SERIALIZER = "json"
+
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_ENABLE_UTC = True
+
+
+# ============================================================
+# RATE LIMIT RESPONSE
+# ============================================================
+
+RATELIMIT_VIEW = "repurposer.views.ratelimited_error"

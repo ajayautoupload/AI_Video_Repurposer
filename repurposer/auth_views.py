@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
+from django_ratelimit.decorators import ratelimit
 import os
 import requests
 from django.shortcuts import redirect, render
@@ -20,7 +21,7 @@ from django.utils.http import (
 # REGISTER
 # ============================================================
 
-
+@ratelimit(key="ip", rate="5/h", method="POST", block=True)
 def register_view(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -236,7 +237,7 @@ def register_view(request):
 # VERIFY EMAIL
 # ============================================================
 
-
+@ratelimit(key="ip", rate="10/h", method="GET", block=True)
 def verify_email(
     request,
     uidb64,
@@ -311,7 +312,7 @@ def verify_email(
 # LOGIN
 # ============================================================
 
-
+@ratelimit(key="ip", rate="5/m", method="POST" , block=True)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("home")

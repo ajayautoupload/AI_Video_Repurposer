@@ -1,4 +1,4 @@
-Django==6.1
+Django==6.1.2
 python-dotenv==1.2.3
 requests==2.34.2
 google-api-python-client==2.200.0
@@ -12,3 +12,8 @@ openai-whisper==20250625
 gunicorn==26.2.0
 psycopg==3.3.6
 psycopg-binary==3.3.6
+faster-whisper==1.2.1
+av==16.0.1
+celery==5.6.3
+redis==8.1.0
+
