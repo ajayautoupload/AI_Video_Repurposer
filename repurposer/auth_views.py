@@ -5,8 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django_ratelimit.decorators import ratelimit
+
 import os
 import requests
+
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes
@@ -21,7 +23,8 @@ from django.utils.http import (
 # REGISTER
 # ============================================================
 
-@ratelimit(key="ip", rate="5/h", method="POST", block=True)
+
+@ratelimit(key="ip", rate="2/m", method="POST", block=True)
 def register_view(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -169,21 +172,29 @@ def register_view(request):
                 )
 
                 try:
-                    resend_api_key = os.environ.get("RESEND_API_KEY")
+                    resend_api_key = os.environ.get(
+                        "RESEND_API_KEY"
+                    )
 
                     if not resend_api_key:
-                        raise Exception("RESEND_API_KEY is not configured")
+                        raise Exception(
+                            "RESEND_API_KEY is not configured"
+                        )
 
                     response = requests.post(
                         "https://api.resend.com/emails",
                         headers={
-                            "Authorization": f"Bearer {resend_api_key}",
-                            "Content-Type": "application/json",
+                            "Authorization": (
+                                f"Bearer {resend_api_key}"
+                            ),
+                            "Content-Type": (
+                                "application/json"
+                            ),
                         },
                         json={
                             "from": os.environ.get(
                                 "RESEND_FROM_EMAIL",
-                                "onboarding@resend.dev"
+                                "onboarding@resend.dev",
                             ),
                             "to": [user.email],
                             "subject": subject,
@@ -191,7 +202,7 @@ def register_view(request):
                         },
                         timeout=20,
                     )
-
+                    
                     response.raise_for_status()
 
                 except Exception as exc:
@@ -237,7 +248,13 @@ def register_view(request):
 # VERIFY EMAIL
 # ============================================================
 
-@ratelimit(key="ip", rate="10/h", method="GET", block=True)
+
+@ratelimit(
+    key="ip",
+    rate="10/h",
+    method="GET",
+    block=True,
+)
 def verify_email(
     request,
     uidb64,
@@ -309,10 +326,347 @@ def verify_email(
 
 
 # ============================================================
+# FORGOT PASSWORD
+# ============================================================
+
+
+
+@ratelimit(
+    key="ip",
+    rate="2/m",
+    method="POST",
+    block=True,
+)
+def password_reset_request(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+
+    if request.method == "POST":
+        email = request.POST.get(
+            "email",
+            "",
+        ).strip()
+
+        if not email:
+            messages.error(
+                request,
+                "Please enter your email address.",
+            )
+
+            return render(
+                request,
+                "forgot_password.html",
+            )
+
+        # ----------------------------------------------------
+        # Find user by email
+        # ----------------------------------------------------
+
+        user = User.objects.filter(
+            email__iexact=email,
+        ).first()
+
+        # Temporary diagnostic.
+        # Does not print the user's email.
+        print(
+            "PASSWORD RESET USER FOUND:",
+            user is not None,
+        )
+
+        if user is not None:
+            print(
+                "PASSWORD RESET USER ACTIVE:",
+                user.is_active,
+            )
+
+        if user is not None and user.is_active:
+
+            # ------------------------------------------------
+            # Generate secure password-reset token
+            # ------------------------------------------------
+
+            uid = urlsafe_base64_encode(
+                force_bytes(user.pk)
+            )
+
+            token = default_token_generator.make_token(
+                user
+            )
+
+            reset_path = reverse(
+                "password_reset_confirm",
+                kwargs={
+                    "uidb64": uid,
+                    "token": token,
+                },
+            )
+
+            reset_url = request.build_absolute_uri(
+                reset_path
+            )
+
+            # ------------------------------------------------
+            # Password reset email
+            # ------------------------------------------------
+
+            subject = (
+                "Reset your AI Video Repurposer password"
+            )
+
+            message = (
+                f"Hello {user.username},\n\n"
+                "We received a request to reset your "
+                "AI Video Repurposer password.\n\n"
+                "Open the link below to create a new password:\n\n"
+                f"{reset_url}\n\n"
+                "If you did not request a password reset, "
+                "you can safely ignore this email.\n\n"
+                "For your security, this link will expire "
+                "automatically.\n\n"
+                "Regards,\n"
+                "AI Video Repurposer"
+            )
+
+            try:
+                resend_api_key = os.environ.get(
+                    "RESEND_API_KEY"
+                )
+
+                if not resend_api_key:
+                    raise Exception(
+                        "RESEND_API_KEY is not configured"
+                    )
+
+                resend_from_email = os.environ.get(
+                    "RESEND_FROM_EMAIL",
+                    "onboarding@resend.dev",
+                )
+
+                response = requests.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": (
+                            f"Bearer {resend_api_key}"
+                        ),
+                        "Content-Type": (
+                            "application/json"
+                        ),
+                    },
+                    json={
+                        "from": resend_from_email,
+                        "to": [user.email],
+                        "subject": subject,
+                        "text": message,
+                    },
+                    timeout=20,
+                )
+
+                print(
+                    "RESEND STATUS:",
+                    response.status_code,
+                )
+
+                print(
+                    "RESEND RESPONSE:",
+                    response.text,
+                )
+
+                response.raise_for_status()
+
+            except Exception as exc:
+                print(
+                    "PASSWORD RESET EMAIL SEND FAILED:"
+                )
+
+                print(
+                    str(exc)
+                )
+
+                messages.error(
+                    request,
+                    "We could not send the password reset email. "
+                    "Please try again later.",
+                )
+
+                return render(
+                    request,
+                    "forgot_password.html",
+                )
+
+        # ----------------------------------------------------
+        # Same response whether email exists or not.
+        # ----------------------------------------------------
+
+        messages.success(
+            request,
+            "If an account with that email exists, "
+            "a password reset link has been sent.",
+        )
+
+        return redirect(
+            "password_reset_request"
+        )
+
+    return render(
+        request,
+        "forgot_password.html",
+    )
+def password_reset_confirm(
+    request,
+    uidb64,
+    token,
+):
+    # --------------------------------------------------------
+    # Decode user ID
+    # --------------------------------------------------------
+
+    try:
+        uid = urlsafe_base64_decode(
+            uidb64
+        ).decode()
+
+        user = User.objects.get(
+            pk=uid,
+            is_active=True,
+        )
+
+    except (
+        TypeError,
+        ValueError,
+        OverflowError,
+        User.DoesNotExist,
+    ):
+        user = None
+
+    # --------------------------------------------------------
+    # Validate reset token
+    # --------------------------------------------------------
+
+    if (
+        user is None
+        or not default_token_generator.check_token(
+            user,
+            token,
+        )
+    ):
+        messages.error(
+            request,
+            "This password reset link is invalid or has expired.",
+        )
+
+        return redirect(
+            "password_reset_request"
+        )
+
+    # --------------------------------------------------------
+    # Process new password
+    # --------------------------------------------------------
+
+    if request.method == "POST":
+        password = request.POST.get(
+            "password",
+            "",
+        )
+
+        confirm_password = request.POST.get(
+            "confirm_password",
+            "",
+        )
+
+        # ----------------------------------------------------
+        # Required fields
+        # ----------------------------------------------------
+
+        if not password or not confirm_password:
+            messages.error(
+                request,
+                "Both password fields are required.",
+            )
+
+            return render(
+                request,
+                "reset_password.html",
+            )
+
+        # ----------------------------------------------------
+        # Password confirmation
+        # ----------------------------------------------------
+
+        if password != confirm_password:
+            messages.error(
+                request,
+                "Passwords do not match.",
+            )
+
+            return render(
+                request,
+                "reset_password.html",
+            )
+
+        # ----------------------------------------------------
+        # Django password validation
+        # ----------------------------------------------------
+
+        try:
+            validate_password(
+                password,
+                user=user,
+            )
+
+        except ValidationError as exc:
+            for error in exc.messages:
+                messages.error(
+                    request,
+                    error,
+                )
+
+            return render(
+                request,
+                "reset_password.html",
+            )
+
+        # ----------------------------------------------------
+        # Save new password
+        #
+        # Django's password hash change invalidates the
+        # previous password-reset token.
+        # ----------------------------------------------------
+
+        user.set_password(password)
+
+        user.save(
+            update_fields=[
+                "password"
+            ]
+        )
+
+        messages.success(
+            request,
+            "Your password has been reset successfully. "
+            "You can now log in.",
+        )
+
+        return redirect(
+            "login"
+        )
+
+    return render(
+        request,
+        "reset_password.html",
+    )
+
+
+# ============================================================
 # LOGIN
 # ============================================================
 
-@ratelimit(key="ip", rate="5/m", method="POST" , block=True)
+
+@ratelimit(
+    key="ip",
+    rate="5/m",
+    method="POST",
+    block=True,
+)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("home")

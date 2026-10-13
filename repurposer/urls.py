@@ -25,11 +25,27 @@ urlpatterns = [
         auth_views.logout_view,
         name='logout',
     ),
+
     path(
-    'verify-email/<uidb64>/<token>/',
-    auth_views.verify_email,
-    name='verify_email',
-),
+        'verify-email/<uidb64>/<token>/',
+        auth_views.verify_email,
+        name='verify_email',
+    ),
+
+    # -----------------------------
+    # Forgot Password
+    # -----------------------------
+    path(
+        'password-reset/',
+        auth_views.password_reset_request,
+        name='password_reset_request',
+    ),
+
+    path(
+        'password-reset/<uidb64>/<token>/',
+        auth_views.password_reset_confirm,
+        name='password_reset_confirm',
+    ),
 
     # -----------------------------
     # Main Dashboard
