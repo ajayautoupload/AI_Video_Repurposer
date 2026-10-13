@@ -4043,3 +4043,75 @@ def x_callback(request):
         content_type='text/plain',
     )
 
+# ============================================================
+# Settings
+# ============================================================
+
+@login_required(login_url="login")
+# ============================================================
+# Settings
+# ============================================================
+
+@login_required(login_url="login")
+def settings_view(request):
+    current_user = request.user
+
+    if request.method == "POST":
+        first_name = request.POST.get(
+            "first_name",
+            "",
+        ).strip()
+
+        last_name = request.POST.get(
+            "last_name",
+            "",
+        ).strip()
+
+        current_user.first_name = first_name
+        current_user.last_name = last_name
+
+        current_user.save(
+            update_fields=[
+                "first_name",
+                "last_name",
+            ]
+        )
+
+        settings_saved = True
+    else:
+        settings_saved = False
+
+    youtube_accounts = YouTubeCredential.objects.filter(
+        user=current_user,
+        is_active=True,
+    )
+
+    instagram_accounts = InstagramCredential.objects.filter(
+        user=current_user,
+        is_active=True,
+    )
+
+    facebook_accounts = FacebookCredential.objects.filter(
+        user=current_user,
+        is_active=True,
+    )
+
+    x_accounts = XCredential.objects.filter(
+        owner=current_user,
+        is_active=True,
+    )
+
+    context = {
+        "user": current_user,
+        "youtube_accounts": youtube_accounts,
+        "instagram_accounts": instagram_accounts,
+        "facebook_accounts": facebook_accounts,
+        "x_accounts": x_accounts,
+        "settings_saved": settings_saved,
+    }
+
+    return render(
+        request,
+        "settings.html",
+        context,
+    )

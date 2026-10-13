@@ -3192,8 +3192,10 @@
         <a href="#failed" class="nav-item"><span class="nav-icon">×</span><span>Failed</span></a>
         <a href="#analytics" class="nav-item"><span class="nav-icon">▥</span><span>Analytics</span></a>
         <a href="#accounts" class="nav-item"><span class="nav-icon">◎</span><span>Social Accounts</span></a>
-        <a href="#settings" class="nav-item"><span class="nav-icon">⚙</span><span>Settings</span></a>
-      </nav>
+<a href="{% url 'settings' %}" class="nav-item">
+    <span class="nav-icon">⚙</span>
+    <span>Settings</span>
+</a>      </nav>
       <div class="sidebar-footer">
         <div class="engine-label">Processing Engine</div>
         <div class="engine-title">AI Repurposing Engine</div>

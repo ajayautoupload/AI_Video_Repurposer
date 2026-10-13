@@ -55,6 +55,11 @@ urlpatterns = [
         views.home,
         name='home',
     ),
+    path(
+    'settings/',
+    views.settings_view,
+    name='settings',
+    ),
 
     path(
         'processing-status/<int:video_id>/',
