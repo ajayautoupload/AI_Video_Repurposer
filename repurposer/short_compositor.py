@@ -21,6 +21,67 @@ OUTPUT_HEIGHT = 1920
 BGM_VOLUME = 0.50
 
 
+def _has_audio_stream(input_path):
+    """Return whether ffprobe finds an audio stream in the source video."""
+    probe = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-select_streams", "a:0",
+            "-show_entries", "stream=index", "-of", "csv=p=0",
+            str(input_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return probe.returncode == 0 and bool(probe.stdout.strip())
+
+
+def apply_background_music(
+    input_path,
+    output_path,
+    bgm_path=None,
+    bgm_volume=BGM_VOLUME,
+):
+    """Mix optional background music into a horizontal clip."""
+    input_path = Path(input_path)
+    output_path = Path(output_path)
+
+    if not input_path.is_file():
+        raise FileNotFoundError(f"Input video not found: {input_path}")
+    if not bgm_path or not Path(bgm_path).is_file():
+        raise FileNotFoundError(f"Background music not found: {bgm_path}")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    music_filter = (
+        "[1:a]aresample=48000,aformat=sample_fmts=fltp:"
+        "sample_rates=48000:channel_layouts=stereo,"
+        f"volume={float(bgm_volume)}[music]"
+    )
+    if _has_audio_stream(input_path):
+        audio_filter = (
+            "[0:a]aresample=48000,aformat=sample_fmts=fltp:"
+            "sample_rates=48000:channel_layouts=stereo[voice];"
+            f"{music_filter};"
+            "[voice][music]amix=inputs=2:duration=first:"
+            "dropout_transition=2:normalize=0[aout]"
+        )
+    else:
+        audio_filter = f"{music_filter};[music]anull[aout]"
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", str(input_path),
+            "-stream_loop", "-1", "-i", str(bgm_path),
+            "-filter_complex", audio_filter,
+            "-map", "0:v", "-map", "[aout]",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-shortest",
+            "-movflags", "+faststart", str(output_path),
+        ],
+        check=True,
+    )
+    return output_path
+
+
 def create_vertical_short(
     input_path,
     output_path,
@@ -156,7 +217,19 @@ def create_vertical_short(
             ]
         )
 
-        audio_filter = (
+        music_filter = (
+            "[1:a]"
+            "aresample=48000,"
+            "aformat="
+            "sample_fmts=fltp:"
+            "sample_rates=48000:"
+            "channel_layouts=stereo,"
+            f"volume={float(bgm_volume)}"
+            "[music]"
+        )
+
+        if _has_audio_stream(input_path):
+            audio_filter = (
             # -------------------------------------------------
             # ORIGINAL AUDIO
             # -------------------------------------------------
@@ -172,14 +245,7 @@ def create_vertical_short(
             # -------------------------------------------------
             # BACKGROUND MUSIC
             # -------------------------------------------------
-            "[1:a]"
-            "aresample=48000,"
-            "aformat="
-            "sample_fmts=fltp:"
-            "sample_rates=48000:"
-            "channel_layouts=stereo,"
-            f"volume={float(bgm_volume)}"
-            "[music];"
+            f"{music_filter};"
 
             # -------------------------------------------------
             # MIX ORIGINAL AUDIO + BGM
@@ -194,7 +260,9 @@ def create_vertical_short(
             "dropout_transition=2:"
             "normalize=0"
             "[aout]"
-        )
+            )
+        else:
+            audio_filter = f"{music_filter};[music]anull[aout]"
 
         command.extend(
             [
@@ -238,7 +306,7 @@ def create_vertical_short(
             "libx264",
 
             "-preset",
-            "medium",
+            "veryfast",
 
             "-crf",
             "23",

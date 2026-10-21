@@ -1,0 +1,4 @@
+{% extends "admin_panel/base.html" %}{% block content %}
+<div class="card" style="margin-bottom:14px"><h2>Plan pricing and limits</h2><p class="muted">Changes apply immediately to current and new subscriptions. Blank video/account limits mean unlimited. Feature values are JSON string arrays.</p></div>
+<div class="grid cols">{% for plan, form in plans %}<article class="card"><form method="post">{% csrf_token %}<input type="hidden" name="plan_id" value="{{ plan.id }}"><div class="row"><h2>{{ plan.name }}</h2><span class="pill">{{ plan.code }}</span></div>{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<small>{{ field.errors }}</small>{% endif %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}<button class="btn" type="submit">Save {{ plan.name }}</button></form></article>{% endfor %}</div>
+{% endblock %}

@@ -42,6 +42,13 @@ YOUTUBE_API_KEY = os.environ.get(
     ""
 )
 
+# Online subscription checkout is intentionally disabled until both secrets
+# are configured. Keep test/live credentials separate in the environment.
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "").strip()
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "").strip()
+RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "").strip()
+RAZORPAY_MODE = os.environ.get("RAZORPAY_MODE", "test").strip().lower()
+
 
 # ============================================================
 # SECURITY
@@ -53,6 +60,13 @@ if not SECRET_KEY:
     raise RuntimeError(
         "DJANGO_SECRET_KEY environment variable is required."
     )
+
+# Separate key can be set for credential encryption. The Django key is
+# retained as a backwards-compatible fallback until deployments configure it.
+TOKEN_ENCRYPTION_KEY = os.environ.get(
+    "TOKEN_ENCRYPTION_KEY",
+    SECRET_KEY,
+)
 
 
 DEBUG = os.environ.get(
@@ -141,6 +155,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "repurposer.context_processors.platform_progress",
             ],
         },
     },
@@ -252,7 +267,7 @@ STATICFILES_DIRS = [
 # MEDIA FILES
 # ============================================================
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -405,7 +420,7 @@ PUBLIC_BASE_URL = (
 
 LOGIN_URL = "/login/"
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/upload/"
 
 LOGOUT_REDIRECT_URL = "/"
 

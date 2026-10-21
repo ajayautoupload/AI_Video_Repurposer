@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import yt_dlp
-from yt_dlp.networking.impersonate import ImpersonateTarget
 
 import httplib2
 from google_auth_httplib2 import AuthorizedHttp
@@ -80,12 +79,10 @@ def download_youtube_video(youtube_url):
         exist_ok=True
     )
 
-    output_template = str(
-        output_directory / "%(title)s.%(ext)s"
-    )
+    output_template = str(output_directory / "%(id)s.%(ext)s")
 
     ydl_options = {
-        "format": "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b",
+        "format": "bv*+ba/best",
 
         "merge_output_format": "mp4",
 
@@ -95,10 +92,12 @@ def download_youtube_video(youtube_url):
 
         "windowsfilenames": True,
 
-        # ----------------------------------------------------
-        # YouTube anti-bot compatibility
-        # ----------------------------------------------------
-        "impersonate": ImpersonateTarget(),
+        "socket_timeout": 30,
+        "retries": 5,
+        "fragment_retries": 5,
+        "file_access_retries": 3,
+        "concurrent_fragment_downloads": 4,
+        "overwrites": True,
     }
 
     with yt_dlp.YoutubeDL(
@@ -110,32 +109,29 @@ def download_youtube_video(youtube_url):
             download=True
         )
 
-        downloaded_file = (
-            ydl.prepare_filename(info)
+        candidates = []
+        final_path = info.get("filepath")
+        if final_path:
+            candidates.append(Path(final_path))
+        candidates.extend(
+            Path(item["filepath"])
+            for item in info.get("requested_downloads", [])
+            if item.get("filepath")
         )
+        candidates.append(Path(ydl.prepare_filename(info)))
 
-        downloaded_file = Path(
-            downloaded_file
+        video_id = info.get("id")
+        if video_id:
+            candidates.extend(output_directory.glob(f"{video_id}.*"))
+
+        downloaded_file = next(
+            (path for path in candidates if path.is_file() and path.suffix.lower() == ".mp4"),
+            None,
         )
-
-        if (
-            downloaded_file.suffix.lower()
-            != ".mp4"
-        ):
-
-            mp4_file = (
-                downloaded_file.with_suffix(
-                    ".mp4"
-                )
-            )
-
-            if mp4_file.exists():
-                downloaded_file = mp4_file
-
-        if not downloaded_file.exists():
+        if downloaded_file is None:
             raise FileNotFoundError(
-                "YouTube video was downloaded, "
-                "but the final MP4 file was not found."
+                "YouTube download finished without a merged MP4. "
+                "Check that FFmpeg is installed and the video is accessible."
             )
 
         return str(downloaded_file)

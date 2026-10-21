@@ -1,0 +1,2 @@
+{% extends "workspace/base.html" %}
+{% block content %}<section class="card"><h2>Upcoming posts</h2>{% for post in posts %}<div class="row"><div><strong>{{ post.platform|title }}</strong><div class="hint">Video #{{ post.video_id }} · {{ post.status|title }}</div></div><span>{{ post.scheduled_at }}</span></div>{% empty %}<div class="empty">There are no upcoming scheduled posts.</div>{% endfor %}</section>{% endblock %}

@@ -3223,7 +3223,10 @@
               <span class="auth-username">
                 {{ request.user.username|default:request.user.email }}
               </span>
-              <a class="auth-logout" href="/logout/">Logout</a>
+              <form method="post" action="{% url 'logout' %}" class="auth-logout-form">
+                {% csrf_token %}
+                <button class="auth-logout" type="submit">Logout</button>
+              </form>
             </div>
             {% else %}
             <a class="auth-link" href="/login/">
@@ -3547,7 +3550,50 @@
                 <source src="{{ clip.path }}" type="video/mp4">
               </video>
               <div class="clip-body">
+
                 <div class="clip-title">Clip {{ clip.number }}</div>
+
+                <div class="clip-music-control">
+
+                  <label class="clip-music-label">
+                    🎵 Background Music
+                  </label>
+
+                  <select
+                    class="clip-music-select"
+                    data-video-path="{{ clip.selection_path }}"
+                  >
+                    <option value="">
+                      🔇 No Music
+                    </option>
+
+                    {% for music in background_music %}
+                      <option value="{{ music.id }}" {% if clip.selected_music_id == music.id %}selected{% endif %}>
+                        {{ music.name }}
+                        {% if music.user_id == user.id %}
+                          — My Music
+                        {% else %}
+                          — Default
+                        {% endif %}
+                      </option>
+                    {% endfor %}
+
+                  </select>
+
+                  <button
+                    type="button"
+                    class="clip-music-save"
+                    data-video-path="{{ clip.selection_path }}"
+                  >
+                    Save Music
+                  </button>
+
+                  <span
+                    class="clip-music-status"
+                    data-video-path="{{ clip.selection_path }}"
+                  ></span>
+
+                </div>
                 <div class="clip-meta"><span class="mini-chip">{{ clip.duration }} sec</span><span
                     class="mini-chip">Score {{ clip.score }}</span></div>
                 <div class="clip-description">{{ clip.text }}</div>
@@ -4657,6 +4703,104 @@
     $$(".manual-clip").forEach(cb => cb.addEventListener("change", () => {
       const card = cb.closest(".clip-card"); card?.classList.toggle("selected", cb.checked);
     }));
+      /* Per-clip background music */
+    $$(".clip-music-save").forEach(button => {
+      button.addEventListener("click", async () => {
+        const videoPath = button.dataset.videoPath || "";
+        const control = document.querySelector(
+          `.clip-music-select[data-video-path="${CSS.escape(videoPath)}"]`
+        );
+        const status = document.querySelector(
+          `.clip-music-status[data-video-path="${CSS.escape(videoPath)}"]`
+        );
+
+        if (!control) {
+          toast("Music error", "Music selector not found.", "error");
+          return;
+        }
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Saving...";
+
+        const body = new URLSearchParams();
+        body.append("video_id", "{{ video.id|default:'' }}");
+        body.append("video_path", videoPath);
+        body.append("background_music_id", control.value || "");
+
+        try {
+          const response = await fetch(
+            "{% url 'save_clip_music_selection' %}",
+            {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/x-www-form-urlencoded"
+              },
+              body: body,
+              credentials: "same-origin"
+            }
+          );
+
+          const contentType = response.headers.get("content-type") || "";
+          const result = contentType.includes("application/json")
+            ? await response.json()
+            : {
+                success: false,
+                error: `Server returned HTTP ${response.status}.`
+              };
+
+          if (!response.ok || !result.success) {
+            throw new Error(
+              result.error || "Could not save background music."
+            );
+          }
+
+          if (status) {
+            status.textContent = `✓ ${result.music_name}`;
+            status.classList.add("show");
+
+            clearTimeout(status._musicTimer);
+            status._musicTimer = setTimeout(() => {
+              status.textContent = "";
+              status.classList.remove("show");
+            }, 3000);
+          }
+
+          const renderedClip = button.closest(".clip-card")?.querySelector("video");
+          if (renderedClip && result.clip_path) {
+            const renderedSource = renderedClip.querySelector("source");
+            if (renderedSource) {
+              renderedSource.src = result.clip_path;
+              renderedClip.load();
+            }
+          }
+
+          toast(
+            "Music saved",
+            result.music_name === "No Music"
+              ? "Background music removed from this clip."
+              : `${result.music_name} selected for this clip.`
+          );
+
+        } catch (err) {
+          if (status) {
+            status.textContent = "";
+            status.classList.remove("show");
+          }
+
+          toast(
+            "Music save failed",
+            err.message || "Could not save background music.",
+            "error"
+          );
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      });
+    });
 
     /* Processing status */
     {% if video %}

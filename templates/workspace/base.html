@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ page_title|default:"Workspace" }} · AI Video Repurposer</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0a1020;--panel:#111b2d;--line:#26354b;--text:#edf3ff;--muted:#9aaac2;--accent:#7c8cff;--green:#30c996;--red:#ff7185}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,Segoe UI,Arial,sans-serif}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:248px 1fr}.sidebar{background:#080e1b;border-right:1px solid var(--line);padding:24px 14px;display:flex;flex-direction:column;gap:24px}.brand{display:flex;align-items:center;gap:12px;padding:4px 10px 18px;border-bottom:1px solid var(--line)}.brand-icon{width:40px;height:40px;border-radius:13px;background:#222b51;color:#aab4ff;display:grid;place-items:center}.brand-name{font-weight:750}.brand-caption,.nav-label,.muted{color:var(--muted);font-size:13px}.nav-label{padding:0 12px;text-transform:uppercase;letter-spacing:.1em;font-size:11px}.nav{display:grid;gap:5px}.nav-item{display:flex;gap:12px;align-items:center;padding:11px 12px;border-radius:10px;color:#b6c2d7}.nav-item:hover,.nav-item.active{background:#19243a;color:white}.nav-item.active{box-shadow:inset 3px 0 var(--accent)}.nav-icon{width:21px;height:21px;display:inline-grid;place-items:center;color:#aab5ff}.nav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.side-bottom{margin-top:auto;border-top:1px solid var(--line);padding:16px 10px;color:var(--muted);font-size:12px}.main{min-width:0;padding:32px clamp(18px,4vw,58px)}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.top h1{margin:0;font-size:27px}.user-chip{display:flex;align-items:center;gap:10px;color:var(--muted)}.avatar{width:36px;height:36px;object-fit:cover;border-radius:50%;background:#252f48;display:grid;place-items:center;color:white;font-weight:700}.grid{display:grid;gap:16px}.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:22px}.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:19px}.stat{font-size:27px;font-weight:750}.stat-label,.hint{color:var(--muted);font-size:13px}.two{grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.section{margin:24px 0}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.section-head h2{font-size:18px;margin:0}.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 15px;border-radius:9px;background:var(--accent);border:0;color:white;font-weight:650;cursor:pointer}.btn.secondary{background:#202d45}.btn.danger{background:#552938;color:#ffb9c4}.btn:disabled{opacity:.55;cursor:wait}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.badge{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 9px;color:#c2ccec;font-size:12px}.empty{padding:28px;text-align:center;color:var(--muted)}.video-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.clip video{width:100%;aspect-ratio:9/16;object-fit:contain;background:#05080f;border-radius:10px}.clip select,.field input,.field select,.field textarea,select,input,textarea{max-width:100%;background:#0b1322;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:9px}.clip select{width:100%;margin:8px 0}.clip{min-width:0}.messages{display:grid;gap:8px;margin-bottom:16px}.messages div{padding:10px 13px;background:#183328;border-radius:9px}.messages .error{background:#482433}.profile-img{width:46px;height:46px;border-radius:50%;object-fit:cover}.icon-defs{position:absolute;width:0;height:0;overflow:hidden}form.inline{display:inline}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}th{color:var(--muted);font-weight:550}label{display:block;margin:8px 0 4px}.field{margin:14px 0}.field input,.field select,.field textarea{width:100%}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px}.form-grid p{margin:7px 0}.icon-circle{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#202d45;color:#aab5ff}
+    .mobile-menu-button{display:none}
+    @media(max-width:850px){.shell{display:block;min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:min(290px,84vw);height:100dvh;overflow-y:auto;z-index:101;transform:translateX(-105%);visibility:hidden;transition:transform .22s ease,visibility .22s;padding:18px 14px;gap:18px}.sidebar.is-open{transform:translateX(0);visibility:visible}.brand{justify-content:flex-start;padding:4px 10px 16px}.brand-copy,.nav-label,.nav-item span:not(.nav-icon),.side-bottom{display:initial}.nav-label{display:block}.nav-item{justify-content:flex-start;padding:11px 12px}.side-progress{display:block}.main{padding:18px 14px}.mobile-menu-button{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#111b2d;color:var(--text);cursor:pointer}.menu-backdrop{position:fixed;inset:0;z-index:100;background:#050912b8}.menu-backdrop[hidden]{display:none}.top{gap:12px}.top h1{font-size:22px}.row{flex-wrap:wrap;align-items:flex-start}.row>form{margin-left:auto}.video-grid{grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:minmax(0,1fr)}table{min-width:560px}.table-wrap{overflow-x:auto}}
+    .side-progress{padding:12px 10px;border:1px solid var(--line);border-radius:11px;background:#0d1728;font-size:12px}.side-progress strong{display:block;margin-bottom:8px;color:#e5ebfa}.side-progress-row{display:flex;justify-content:space-between;gap:5px;padding:3px 0;color:var(--muted)}.side-action{border:0;background:transparent;color:var(--muted);cursor:pointer;text-decoration:underline;padding:4px}.ad-media{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:10px;background:#070b12}.ad-slide[hidden]{display:none}.ad-panel summary{cursor:pointer;color:#cbd5ea}
+    @media(max-width:850px){.side-progress{display:none}}
+    @media(max-width:850px){.sidebar.is-open .side-progress{display:block}}
+    .profile-menu-wrap{position:relative}.profile-trigger{display:flex;align-items:center;gap:10px;padding:5px 9px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);cursor:pointer}.profile-trigger:hover,.profile-trigger[aria-expanded="true"]{border-color:var(--line);background:var(--panel)}.profile-trigger .avatar{width:38px;height:38px;display:grid;place-items:center}.profile-menu{position:absolute;z-index:20;right:0;top:calc(100% + 8px);width:min(270px,calc(100vw - 32px));padding:10px;border:1px solid var(--line);border-radius:13px;background:#111b2d;box-shadow:0 18px 44px #0008}.profile-menu[hidden]{display:none}.profile-menu-head{padding:9px 10px 13px;border-bottom:1px solid var(--line);margin-bottom:6px}.profile-menu-head strong,.profile-menu-head span{display:block;overflow:hidden;text-overflow:ellipsis}.profile-menu-head span{font-size:12px;color:var(--muted)}.profile-menu a,.profile-menu button{display:flex;width:100%;padding:10px;border:0;border-radius:8px;background:transparent;color:var(--text);text-align:left;cursor:pointer}.profile-menu a:hover,.profile-menu button:hover{background:#202d45}.profile-menu form{margin:0}.nav-label a{color:inherit}.workspace-nav-label{padding:0 12px}.ad-audio-toggle{margin-top:8px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#111b2d;color:var(--text);cursor:pointer}.ad-audio-toggle:hover{background:#202d45}
+    @media(max-width:850px){.profile-trigger .profile-name{display:none}.profile-trigger{padding:3px}.profile-menu{right:0}}
+    @media(max-width:480px){.top{flex-wrap:wrap;align-items:flex-start}.top>div:first-child{flex:1;min-width:0}.top h1{font-size:18px}.top .muted{font-size:11px}.top .profile-menu-wrap{margin-left:auto}.card{padding:14px}.section-head{align-items:flex-start;flex-wrap:wrap}}
+  </style>
+  <style>.nav-item.primary-upload{background:#202d45;color:#fff;border:1px solid #435274;font-weight:750}.nav-item.primary-upload .nav-icon{color:#c5cbff}</style>
+</head>
+<body>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-clips" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M7 3h14v3M10 6l4 5-4 5z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m10.3 4.3-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-2.7l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4m0 4h.01"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M8 15l4-4 3 3 6-7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4L7.3 15a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a8 8 0 0 1 0 2z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5m5 5H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></symbol>
+  <symbol id="i-trending" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/><path d="M3 21h18"/></symbol>
+</svg>
+<div class="shell">
+  <aside class="sidebar" id="appSidebar" aria-label="Main navigation">
+    <a class="brand" href="{% url 'upload_video_page' %}"><span class="brand-icon"><svg class="nav-icon"><use href="#i-clips"/></svg></span><span class="brand-copy"><span class="brand-name">Video Repurposer</span><br><span class="brand-caption">Creator workspace</span></span></a>
+    <span class="nav-label workspace-nav-label">Main menu</span>
+    <nav class="nav">
+      <a class="nav-item primary-upload {% if active_page == 'upload' %}active{% endif %}" href="{% url 'upload_video_page' %}" title="Video Upload"><span class="nav-icon"><svg><use href="#i-upload"/></svg></span><span>Video Upload</span></a>
+      <a class="nav-item {% if active_page == 'workspace' %}active{% endif %}" href="{% url 'workspace_page' %}" title="Workspace"><span class="nav-icon"><svg><use href="#i-dashboard"/></svg></span><span>Workspace</span></a>
+      <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'home' %}"><span class="nav-icon"><svg><use href="#i-dashboard"/></svg></span><span>Dashboard</span></a>
+      <a class="nav-item {% if active_page == 'videos' %}active{% endif %}" href="{% url 'videos_page' %}"><span class="nav-icon"><svg><use href="#i-video"/></svg></span><span>Videos</span></a>
+      <a class="nav-item {% if active_page == 'schedule' %}active{% endif %}" href="{% url 'upcoming_schedule_page' %}"><span class="nav-icon"><svg><use href="#i-calendar"/></svg></span><span>Upcoming Schedule</span></a>
+      <a class="nav-item {% if active_page == 'clips' %}active{% endif %}" href="{% url 'generated_clips_page' %}"><span class="nav-icon"><svg><use href="#i-clips"/></svg></span><span>Generated Clips</span></a>
+      <a class="nav-item {% if active_page == 'failed' %}active{% endif %}" href="{% url 'failed_items_page' %}"><span class="nav-icon"><svg><use href="#i-alert"/></svg></span><span>Failed</span></a>
+      <a class="nav-item {% if active_page == 'analytics' %}active{% endif %}" href="{% url 'analytics_page' %}"><span class="nav-icon"><svg><use href="#i-chart"/></svg></span><span>Analytics</span></a>
+      <a class="nav-item {% if active_page == 'progress' %}active{% endif %}" href="{% url 'progress_report_page' %}" title="Progress Report"><span class="nav-icon"><svg><use href="#i-chart"/></svg></span><span>Progress Report</span></a>
+      <a class="nav-item {% if active_page == 'trending' %}active{% endif %}" href="{% url 'youtube_trending_page' %}" title="YouTube Trending"><span class="nav-icon"><svg><use href="#i-trending"/></svg></span><span>YouTube Trending</span></a>
+      <a class="nav-item {% if active_page == 'accounts' %}active{% endif %}" href="{% url 'social_accounts_page' %}"><span class="nav-icon"><svg><use href="#i-users"/></svg></span><span>Social Accounts</span></a>
+      <a class="nav-item {% if active_page == 'subscription' %}active{% endif %}" href="{% url 'subscription_page' %}"><span class="nav-icon">₹</span><span>Subscription</span></a>
+      <a class="nav-item {% if active_page == 'settings' %}active{% endif %}" href="{% url 'settings' %}"><span class="nav-icon"><svg><use href="#i-settings"/></svg></span><span>Settings</span></a>
+      <a class="nav-item" href="{% url 'user_notifications' %}"><span class="nav-icon">♧</span><span>Notifications</span></a>
+      {% if request.user.is_staff %}<a class="nav-item" href="{% url 'admin_panel_dashboard' %}"><span class="nav-icon">◫</span><span>Admin Panel</span></a>{% endif %}
+    </nav>
+    {% if request.user.is_authenticated %}<section class="side-progress"><strong>Platform progress</strong>{% for platform in platform_progress %}<div class="side-progress-row"><span>{{ platform.label }}</span><span>{{ platform.published }}/{{ platform.total }}</span></div>{% endfor %}</section>{% endif %}
+    {% if not request.user.is_authenticated %}<div class="side-bottom"><a class="side-action" href="{% url 'login' %}">Log in</a></div>{% endif %}
+  </aside>
+  <div class="menu-backdrop" id="sidebarBackdrop" hidden></div>
+  <main class="main">
+    <header class="top"><div style="display:flex;align-items:center;gap:12px"><button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-expanded="false" aria-controls="appSidebar" aria-label="Open navigation">☰ <span>Menu</span></button><div><h1>{{ page_title }}</h1><div class="muted">Manage your videos and publishing workflow</div></div></div><div class="profile-menu-wrap" id="profileMenuWrap"><button class="profile-trigger" id="profileTrigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="profileMenu">{% if request.user.settings.profile_picture %}<img class="avatar" src="{{ request.user.settings.profile_picture.url }}" alt="Profile photo">{% else %}<span class="avatar">{{ request.user.username|first|upper }}</span>{% endif %}<span class="profile-name">{{ request.user.get_full_name|default:request.user.username }}</span></button><div class="profile-menu" id="profileMenu" hidden><div class="profile-menu-head"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.email }}</span></div><a href="{% url 'settings' %}#profile">Profile &amp; Settings</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Log out</button></form></div></div></header>
+    {% if messages %}<div class="messages">{% for message in messages %}<div class="{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script>
+(() => {
+  const sidebar = document.getElementById("appSidebar");
+  const menuButton = document.getElementById("mobileMenuButton");
+  const backdrop = document.getElementById("sidebarBackdrop");
+  const closeSidebar = () => {
+    sidebar?.classList.remove("is-open");
+    backdrop?.setAttribute("hidden", "");
+    menuButton?.setAttribute("aria-expanded", "false");
+  };
+  if (sidebar && menuButton && backdrop) {
+    menuButton.addEventListener("click", () => {
+      const open = !sidebar.classList.contains("is-open");
+      sidebar.classList.toggle("is-open", open);
+      backdrop.toggleAttribute("hidden", !open);
+      menuButton.setAttribute("aria-expanded", String(open));
+    });
+    backdrop.addEventListener("click", closeSidebar);
+    sidebar.querySelectorAll("a").forEach(link => link.addEventListener("click", closeSidebar));
+    document.addEventListener("keydown", event => { if (event.key === "Escape") closeSidebar(); });
+  }
+  const trigger = document.getElementById("profileTrigger");
+  const menu = document.getElementById("profileMenu");
+  const wrap = document.getElementById("profileMenuWrap");
+  if (!trigger || !menu || !wrap) return;
+  const close = () => { menu.hidden = true; trigger.setAttribute("aria-expanded", "false"); };
+  trigger.addEventListener("click", () => {
+    const open = trigger.getAttribute("aria-expanded") !== "true";
+    menu.hidden = !open;
+    trigger.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", event => { if (!wrap.contains(event.target)) close(); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape") { close(); trigger.focus(); } });
+})();
+</script>
+</body>
+</html>

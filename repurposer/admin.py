@@ -6,6 +6,11 @@ from .models import (
     InstagramCredential,
     FacebookCredential,
     ScheduledPost,
+    BackgroundMusic,
+    Advertisement,
+    SubscriptionPlan,
+    Subscription,
+    SubscriptionPayment,
 )
 
 
@@ -84,3 +89,38 @@ class ScheduledPostAdmin(admin.ModelAdmin):
         'title',
         'external_post_id',
     )
+
+
+@admin.register(BackgroundMusic)
+class BackgroundMusicAdmin(admin.ModelAdmin):
+    list_display = ("name", "user", "is_shared", "is_default", "created_at")
+    list_filter = ("is_shared", "is_default")
+    search_fields = ("name", "user__username")
+
+
+@admin.register(Advertisement)
+class AdvertisementAdmin(admin.ModelAdmin):
+    list_display = ("media_file", "destination_url", "is_active", "created_at")
+    list_filter = ("is_active",)
+
+
+@admin.register(SubscriptionPlan)
+class SubscriptionPlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "price", "duration_days", "video_limit", "account_limit", "is_trial", "is_active")
+    list_editable = ("price", "duration_days", "video_limit", "account_limit", "is_active")
+    search_fields = ("name", "code")
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "status", "starts_at", "expires_at", "is_grandfathered")
+    list_filter = ("status", "is_grandfathered", "plan")
+    search_fields = ("user__username", "user__email")
+
+
+@admin.register(SubscriptionPayment)
+class SubscriptionPaymentAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "amount", "currency", "status", "gateway", "created_at")
+    list_filter = ("status", "gateway", "plan")
+    search_fields = ("user__username", "order_id", "transaction_id")
+    readonly_fields = ("user", "plan", "order_id", "transaction_id", "amount", "currency", "status", "gateway_data")

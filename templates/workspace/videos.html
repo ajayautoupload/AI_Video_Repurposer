@@ -1,0 +1,14 @@
+{% extends "workspace/base.html" %}
+{% block content %}
+<section class="card video-list">
+  <div class="section-head"><h2>Your videos</h2><a class="btn" href="{% url 'upload_video_page' %}">Add video</a></div>
+  {% for video in videos %}
+  <article class="row video-row">
+    <div class="video-identity"><a href="/?video_id={{ video.id }}"><strong>Video #{{ video.id }}</strong></a><div class="hint">{{ video.video_file.name|default:video.youtube_url|default:"Uploaded video" }}</div></div>
+    <span class="badge video-status">{{ video.status|title }} · {{ video.processing_progress }}%</span>
+    <form method="post" action="{% url 'delete_video' video.id %}" onsubmit="return confirm('Delete this video and its generated clips?')">{% csrf_token %}<button type="submit" class="btn danger" {% if video.status == 'processing' %}disabled title="Wait until processing completes"{% endif %}>Delete</button></form>
+  </article>
+  {% empty %}<div class="empty">No videos uploaded yet.</div>{% endfor %}
+</section>
+<style>.video-row{min-width:0}.video-identity{min-width:0;flex:1;overflow-wrap:anywhere}.video-status{flex:0 0 auto}.video-row form{flex:0 0 auto}.video-row .btn{min-width:82px}@media(max-width:480px){.video-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}.video-identity{grid-column:1/-1}.video-status{max-width:100%;white-space:normal}.video-row form{grid-column:2;grid-row:2;align-self:center}.video-row .btn{min-height:42px}}</style>
+{% endblock %}

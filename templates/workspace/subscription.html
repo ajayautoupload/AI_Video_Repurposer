@@ -1,0 +1,45 @@
+{% extends "workspace/base.html" %}
+{% block content %}
+<section class="card sub-hero">
+  <div><span class="badge">ACCOUNT PLAN</span><h2>{% if subscription and subscription.is_grandfathered %}Legacy account access{% elif subscription and subscription.plan %}{{ subscription.plan.name }}{% else %}No active plan{% endif %}</h2>
+  <p class="hint">{% if subscription and subscription.is_grandfathered %}Your account existed before subscriptions were introduced and remains fully enabled.{% elif subscription %}Status: {{ subscription.get_status_display }}{% else %}Choose a plan to enable video processing.{% endif %}</p></div>
+  <div class="sub-summary"><strong>{% if days_remaining != None %}{{ days_remaining }} days{% else %}No expiry{% endif %}</strong><span class="hint">{% if subscription and subscription.expires_at %}remaining · expires {{ subscription.expires_at|date:"M j, Y" }}{% else %}subscription duration{% endif %}</span></div>
+</section>
+{% if not can_process %}<div class="notice" role="alert">Your subscription has expired or your video allowance has been used. Choose a paid plan to continue processing videos.</div>{% endif %}
+<section class="grid stats sub-stats">
+  <article class="card"><div class="stat">{{ videos_used|default:0 }}{% if video_limit != None %} / {{ video_limit }}{% endif %}</div><div class="stat-label">Videos used{% if video_limit == None %} · unlimited{% endif %}</div></article>
+  <article class="card"><div class="stat">{% if videos_remaining == None %}∞{% else %}{{ videos_remaining|default:0 }}{% endif %}</div><div class="stat-label">Videos remaining</div></article>
+  <article class="card"><div class="stat">{% if subscription and subscription.plan.account_limit != None %}{{ subscription.plan.account_limit }}{% else %}∞{% endif %}</div><div class="stat-label">Accounts allowed per platform</div></article>
+</section>
+<section class="card section">
+ <div class="section-head"><div><h2>Connected accounts</h2><p class="hint">Limits apply separately to each platform.</p></div></div>
+ <div class="account-grid">{% for platform, count in account_usage.items %}<div class="account-box"><strong>{{ platform }}</strong><span>{{ count }} connected</span></div>{% endfor %}</div>
+</section>
+<section class="section">
+ <div class="section-head"><div><h2>Choose your plan</h2><p class="hint">Prices, durations and allowances are maintained by the administrator.</p></div></div>
+ <div class="plan-grid">{% for plan in plans %}<article class="card plan-card"><span class="badge">{{ plan.duration_days }} days</span><h3>{{ plan.name }}</h3><div class="price">₹{{ plan.price }} <small>/ {{ plan.duration_days }} days</small></div><div class="plan-limits"><div><strong>{% if plan.video_limit == None %}Unlimited{% else %}{{ plan.video_limit }}{% endif %}</strong><span>videos per plan period</span></div><div><strong>{% if plan.account_limit == None %}Unlimited{% else %}{{ plan.account_limit }}{% endif %}</strong><span>accounts per platform</span></div></div>
+ {% if plan.features %}<ul class="feature-list">{% for feature in plan.features %}<li>{{ feature|cut:"_"|title }}</li>{% endfor %}</ul>{% endif %}
+ {% if plan.is_trial %}<button class="btn plan-buy secondary" type="button" disabled>Trial plan</button>{% elif payment_configured %}<button class="btn plan-buy" type="button" data-order-url="{% url 'subscription_create_order' plan.id %}">Choose {{ plan.name }}</button>{% else %}<button class="btn plan-buy" type="button" disabled title="Payment credentials are not configured">Payment setup required</button>{% endif %}</article>{% endfor %}</div>
+ {% if not payment_configured %}<p class="setup-note">Online payment is not enabled yet. An administrator must configure Razorpay credentials for the {{ razorpay_mode|title }} environment. No plan will be activated until Razorpay confirms a captured payment.</p>{% endif %}
+</section>
+<section class="card section"><div class="section-head"><div><h2>Payment history</h2><p class="hint">Verified transactions and their subscription periods.</p></div></div>
+ <div class="table-wrap"><table><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th><th>Subscription period</th><th>Transaction</th></tr></thead><tbody>{% for payment in payments %}<tr><td>{{ payment.created_at|date:"M j, Y H:i" }}</td><td>{{ payment.plan.name }}</td><td>{{ payment.currency }} {{ payment.amount }}</td><td><span class="badge">{{ payment.get_status_display }}</span></td><td>{% if payment.subscription_starts_at %}{{ payment.subscription_starts_at|date:"M j, Y" }} – {{ payment.subscription_expires_at|date:"M j, Y" }}{% else %}—{% endif %}</td><td>{{ payment.transaction_id|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6" class="empty">No payment records yet.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+<style>
+.sub-hero{display:flex;justify-content:space-between;gap:20px;align-items:center;background:linear-gradient(120deg,#172444,#111b2d 70%)}.sub-hero h2{margin:12px 0 5px}.sub-summary{display:grid;text-align:right}.sub-summary strong{font-size:24px}.notice,.setup-note{margin:14px 0;padding:13px 16px;border:1px solid #7d5a38;border-radius:10px;background:#392b1d;color:#ffe2b6}.sub-stats{margin-top:16px}.account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.account-box{display:flex;justify-content:space-between;gap:8px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0d1728}.account-box span{color:var(--muted)}.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(245px,100%),1fr));gap:14px}.plan-card h3{margin:13px 0 5px}.price{font-size:26px;font-weight:750}.price small{font-size:13px;color:var(--muted);font-weight:400}.plan-limits{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:17px 0}.plan-limits div{display:grid;padding:10px;background:#0d1728;border-radius:9px}.plan-limits span{color:var(--muted);font-size:12px}.feature-list{padding-left:20px;color:#c6d1e4;font-size:13px;min-height:80px}.plan-buy{width:100%;margin-top:10px}.table-wrap{overflow-x:auto}.table-wrap table{min-width:720px}@media(max-width:560px){.sub-hero{align-items:flex-start;flex-direction:column}.sub-summary{text-align:left}.account-box{flex-direction:column}}
+</style>
+{% if payment_configured %}<form hidden>{% csrf_token %}</form><script src="https://checkout.razorpay.com/v1/checkout.js"></script><script>
+(() => {
+ const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || "{{ csrf_token }}";
+ document.querySelectorAll(".plan-buy[data-order-url]").forEach(button => button.addEventListener("click", async () => {
+   if (button.disabled) return; button.disabled = true; const original = button.textContent; button.textContent = "Preparing secure checkout…";
+   try {
+     const response = await fetch(button.dataset.orderUrl,{method:"POST",headers:{"X-CSRFToken":csrf,"Accept":"application/json"}}); const order = await response.json(); if (!response.ok) throw new Error(order.error || "Could not start checkout.");
+     const checkout = new Razorpay({key:order.key,amount:order.amount,currency:order.currency,name:order.name,description:order.description,order_id:order.order_id,handler:async result=>{
+       const verified = await fetch("{% url 'subscription_verify_payment' %}",{method:"POST",headers:{"Content-Type":"application/json","X-CSRFToken":csrf},body:JSON.stringify(result)}); const data=await verified.json(); if(!verified.ok) throw new Error(data.error||"Payment verification is pending."); window.location.reload();
+     },modal:{ondismiss:()=>{button.disabled=false;button.textContent=original;}}}); checkout.on("payment.failed", failure=>{alert(failure.error?.description||"Payment failed. Your plan has not been activated.");button.disabled=false;button.textContent=original;}); checkout.open();
+   } catch(error) { alert(error.message); button.disabled=false;button.textContent=original; }
+ }));
+})();
+</script>{% endif %}
+{% endblock %}

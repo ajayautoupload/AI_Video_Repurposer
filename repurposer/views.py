@@ -1,7 +1,13 @@
-﻿from pathlib import Path
+from pathlib import Path
+import hashlib
+import hmac
+import shutil
 import json
 import logging
+import subprocess
+from threading import Thread
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django_ratelimit.decorators import ratelimit
 
 logger = logging.getLogger(__name__)
@@ -13,7 +19,8 @@ from django.shortcuts import (
     redirect,
     get_object_or_404,
 )
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
 from django.urls import reverse
 from urllib.parse import quote
 
@@ -23,10 +30,13 @@ from django.http import (
     HttpResponse,
     JsonResponse,
 )
+from django.db.models import Q
 from django.middleware.csrf import get_token
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
-from .forms import VideoUploadForm
+from .forms import AdvertisementUploadForm, VideoUploadForm
 
 from .models import (
     Video,
@@ -35,14 +45,26 @@ from .models import (
     FacebookCredential,
     ScheduledPost,
     XCredential,
+    UserSettings,
+    BackgroundMusic,
+    ClipMusicSelection,
+    Advertisement,
+    SubscriptionPlan,
+    SubscriptionPayment,
+)
+from .subscriptions import (
+    account_entitlement, activate_captured_payment, current_subscription, create_razorpay_order,
+    razorpay_configured, subscription_allows, verify_razorpay_payment, video_entitlement,
 )
 
 from .processing_service import (
     process_video,
 )
+from .media_access import signed_public_media_url
 
 from .short_compositor import (
     create_vertical_short,
+    apply_background_music,
 )
 
 from .ai_metadata import (
@@ -78,6 +100,7 @@ from .youtube_oauth import (
 from .youtube_analytics_service import (
     get_youtube_dashboard_analytics,
 )
+from .facebook_analytics_service import get_facebook_dashboard_analytics
 
 from .youtube_trends_service import (
     get_youtube_trend_context,
@@ -155,6 +178,7 @@ def _configure_video_form_for_user(form, user):
         form.fields["selected_instagram_account"].queryset = InstagramCredential.objects.none()
         form.fields["selected_facebook_page"].queryset = FacebookCredential.objects.none()
         form.fields["selected_x_account"].queryset = XCredential.objects.none()
+        form.fields["background_music"].queryset = BackgroundMusic.objects.none()
         return form
 
     form.fields["selected_youtube_channel"].queryset = YouTubeCredential.objects.filter(
@@ -172,6 +196,12 @@ def _configure_video_form_for_user(form, user):
     form.fields["selected_x_account"].queryset = XCredential.objects.filter(
         owner=user,
         is_active=True,
+    )
+    form.fields["background_music"].queryset = (
+        BackgroundMusic.objects.filter(
+            Q(user=user) | Q(is_shared=True) | Q(user__isnull=True, is_default=True),
+            is_active=True,
+        ).distinct().order_by("name")
     )
 
     return form
@@ -308,10 +338,7 @@ def _publish_manual_clip(video, clip, platform, account):
         if not user_id:
             raise ValueError("Instagram account ID is missing.")
 
-        public_url = (
-            f"{settings.PUBLIC_BASE_URL.rstrip('/')}/"
-            f"{clip['path'].lstrip('/')}"
-        )
+        public_url = signed_public_media_url(clip["path"])
         check_public_video_url(public_url)
 
         result = upload_reel_to_instagram(
@@ -373,167 +400,7 @@ def _publish_manual_clip(video, clip, platform, account):
 # ============================================================
 
 
-def get_generated_clips(video):
-    """
-    Rebuild generated clip information from files created by
-    processing_service.py.
-    """
-
-    generated_clips = []
-
-    if not video:
-
-        return generated_clips
-
-    # ========================================================
-    # VIRAL CLIPS
-    # ========================================================
-
-    if video.processing_mode == 'viral':
-
-        output_directory = (
-            Path(settings.MEDIA_ROOT)
-            / 'processed'
-            / 'viral'
-            / str(video.id)
-        )
-
-        if not output_directory.exists():
-
-            return generated_clips
-
-        clip_files = sorted(
-            output_directory.glob(
-             'normal_clip_*.mp4'
-
-            ),
-            key=lambda path: int(
-                path.stem.split('_')[-1]
-            ),
-        )
-
-        for index, clip_file in enumerate(
-            clip_files,
-            start=1,
-        ):
-
-            relative_path = (
-                clip_file.relative_to(
-                    settings.MEDIA_ROOT
-                )
-            )
-
-            media_path = (
-                str(relative_path)
-                .replace('\\', '/')
-            )
-
-            generated_clips.append(
-                {
-                    'number': index,
-
-                    'path': (
-                        f'{settings.MEDIA_URL}'
-                        f'{media_path}'
-                    ),
-
-                    'file_path': str(
-                        clip_file
-                    ),
-
-                    'start': 0,
-
-                    'end': 0,
-
-                    'duration': 0,
-
-                    'text': (
-                        'Viral clip generated by AI.'
-                    ),
-
-                    'score': 'â€”',
-                }
-            )
-
-    # ========================================================
-    # NORMAL CLIPS
-    # ========================================================
-
-    elif video.processing_mode == 'normal':
-
-        output_directory = (
-            Path(settings.MEDIA_ROOT)
-            / 'processed'
-            / 'normal'
-            / str(video.id)
-        )
-
-        if not output_directory.exists():
-
-            return generated_clips
-
-        clip_files = sorted(
-            output_directory.glob(
-                'normal_clip_*.mp4'
-
-            ),
-            key=lambda path: int(
-                path.stem.split('_')[-1]
-            ),
-        )
-
-        for index, clip_file in enumerate(
-            clip_files,
-            start=1,
-        ):
-
-            relative_path = (
-                clip_file.relative_to(
-                    settings.MEDIA_ROOT
-                )
-            )
-
-            media_path = (
-                str(relative_path)
-                .replace('\\', '/')
-            )
-
-            generated_clips.append(
-                {
-                    'number': index,
-
-                    'path': (
-                        f'{settings.MEDIA_URL}'
-                        f'{media_path}'
-                    ),
-
-                    'file_path': str(
-                        clip_file
-                    ),
-
-                    'start': 0,
-
-                    'end': 0,
-
-                    'duration': 0,
-
-                    'text': (
-                        'Normal sequential clip.'
-                    ),
-
-                    'score': 'â€”',
-                }
-            )
-
-    return generated_clips
-
-
-# ============================================================
-# AI METADATA
-# ============================================================
-
-
-def enrich_clips_with_ai_metadata(generated_clips):
+def enrich_clips_with_ai_metadata(generated_clips, preferences=None):
     """
     Generate title, description and hashtags for each newly
     generated clip using Gemini.
@@ -544,6 +411,18 @@ def enrich_clips_with_ai_metadata(generated_clips):
 
     if not generated_clips:
         return generated_clips
+
+    enabled = {
+        "title": getattr(preferences, "ai_titles", True),
+        "description": (
+            getattr(preferences, "ai_descriptions", True)
+            or getattr(preferences, "ai_captions", True)
+        ),
+        "hashtags": getattr(preferences, "ai_hashtags", True),
+    }
+    # The current metadata generator returns all three fields together.
+    # Keep its requests off entirely when the user disabled every AI field.
+    should_generate = any(enabled.values())
 
     enriched_clips = []
 
@@ -556,13 +435,27 @@ def enrich_clips_with_ai_metadata(generated_clips):
                 f"{clip['number']}..."
             )
 
-            metadata = generate_video_file_metadata(
-                clip["file_path"]
+            metadata = (
+                generate_video_file_metadata(clip["file_path"])
+                if should_generate
+                else {}
             )
 
-            updated_clip["title"] = metadata["title"]
-            updated_clip["description"] = metadata["description"]
-            updated_clip["hashtags"] = metadata["hashtags"]
+            updated_clip["title"] = (
+                metadata.get("title")
+                if enabled["title"]
+                else None
+            ) or f"AI Video Repurposer Clip {clip['number']}"
+            updated_clip["description"] = (
+                metadata.get("description")
+                if enabled["description"]
+                else None
+            ) or "A short-form video created with AI Video Repurposer."
+            updated_clip["hashtags"] = (
+                metadata.get("hashtags")
+                if enabled["hashtags"]
+                else None
+            ) or ["#Shorts", "#Reels", "#AI", "#Video"]
 
             print(
                 "AI metadata generated successfully for clip "
@@ -845,7 +738,12 @@ def run_auto_publishing(
 
             schedule_slots = (
                 get_next_schedule_slots(
-                    len(generated_clips)
+                    len(generated_clips),
+                    getattr(
+                        getattr(video.user, "settings", None),
+                        "timezone",
+                        "Asia/Kolkata",
+                    ),
                 )
             )
 
@@ -1067,7 +965,12 @@ def run_auto_publishing(
 
             schedule_slots = (
                 get_next_schedule_slots(
-                    len(generated_clips)
+                    len(generated_clips),
+                    getattr(
+                        getattr(video.user, "settings", None),
+                        "timezone",
+                        "Asia/Kolkata",
+                    ),
                 )
             )
 
@@ -1600,6 +1503,34 @@ def apply_vertical_compositor(video, generated_clips):
             / f"vertical_clip_{clip['number']}.mp4"
         )
 
+        source_relative_path = source_path.relative_to(
+            settings.MEDIA_ROOT
+        )
+        source_media_path = str(source_relative_path).replace("\\", "/")
+        selection_path = (
+            f"{settings.MEDIA_URL}"
+            f"{source_media_path}"
+        )
+        selection = ClipMusicSelection.objects.filter(
+            user=video.user,
+            video=video,
+            video_path=selection_path,
+        ).select_related("background_music").first()
+
+        selected_bgm_path = bgm_path if not selection else None
+        if selection and selection.background_music:
+            music = selection.background_music
+            if (
+                music.user_id == video.user_id
+                or (music.user_id is None and music.is_default)
+            ):
+                try:
+                    candidate_path = Path(music.audio_file.path)
+                    if candidate_path.is_file():
+                        selected_bgm_path = candidate_path
+                except (AttributeError, NotImplementedError, ValueError):
+                    selected_bgm_path = None
+
         print(
             "Creating vertical 9:16 clip "
             f"{clip['number']}..."
@@ -1608,8 +1539,23 @@ def apply_vertical_compositor(video, generated_clips):
         create_vertical_short(
             input_path=source_path,
             output_path=output_path,
-            bgm_path=bgm_path if bgm_path.is_file() else None,
+            bgm_path=(
+                selected_bgm_path
+                if selected_bgm_path and Path(selected_bgm_path).is_file()
+                else None
+            ),
         )
+
+        # A new processing pass may have changed the selected track. The
+        # vertical output is current now, so discard any older saved render.
+        music_output = (
+            Path(settings.MEDIA_ROOT)
+            / "processed"
+            / "music"
+            / str(video.id)
+            / f"clip_{clip['number']}.mp4"
+        )
+        music_output.unlink(missing_ok=True)
 
         updated_clip = dict(clip)
 
@@ -1683,6 +1629,14 @@ def background_process_video(
 
         video.refresh_from_db()
 
+        # Upload-time music is applied only after the source clips exist,
+        # so generation retains its existing no-music behavior by default.
+        if video.background_music_id:
+            generated_clips = get_generated_clips(video)
+            for clip in generated_clips:
+                render_clip_background_music(video, clip, video.background_music)
+            generated_clips = get_generated_clips(video)
+
 
         # ====================================================
         # MANUAL SYSTEM
@@ -1733,7 +1687,8 @@ def background_process_video(
         )
 
         generated_clips = enrich_clips_with_ai_metadata(
-            generated_clips
+            generated_clips,
+            getattr(video.user, "settings", None),
         )
 
         video.processing_progress = 98
@@ -1906,7 +1861,7 @@ def get_generated_clips(video):
             vertical_directory.glob("vertical_clip_*.mp4")
         )
 
-    if vertical_clip_files:
+    if vertical_clip_files and video.output_format == "vertical":
         clip_files = vertical_clip_files
     elif video.processing_mode == "normal":
         clip_files = list(
@@ -1931,6 +1886,13 @@ def get_generated_clips(video):
     clip_files.sort(key=clip_number)
 
     generated_clips = []
+    selections = {
+        selection.video_path: selection
+        for selection in ClipMusicSelection.objects.filter(
+            user=video.user,
+            video=video,
+        ).select_related("background_music")
+    }
 
     for index, clip_file in enumerate(
         clip_files,
@@ -1944,12 +1906,27 @@ def get_generated_clips(video):
             relative_path
         ).replace("\\", "/")
 
-        generated_clips.append({
+        source_name = (
+            f"normal_clip_{clip_number(clip_file)}.mp4"
+            if video.processing_mode == "normal"
+            else f"clip_{clip_number(clip_file)}.mp4"
+        )
+        source_file = output_directory / source_name
+        source_relative_path = source_file.relative_to(settings.MEDIA_ROOT)
+        source_media_path = str(source_relative_path).replace("\\", "/")
+        selection_path = (
+            f"{settings.MEDIA_URL}"
+            f"{source_media_path}"
+        )
+
+        clip = {
             "number": index,
             "path": (
                 f"{settings.MEDIA_URL}{media_path}"
             ),
             "file_path": str(clip_file),
+            "source_file_path": str(source_file),
+            "selection_path": selection_path,
             "duration": "â€”",
             "text": (
                 "Normal sequential cut"
@@ -1957,9 +1934,68 @@ def get_generated_clips(video):
                 else "Viral clip"
             ),
             "score": "â€”",
-        })
+        }
+
+        selection = selections.get(selection_path)
+        if selection:
+            music_output = (
+                Path(settings.MEDIA_ROOT)
+                / "processed"
+                / "music"
+                / str(video.id)
+                / f"clip_{clip_number(clip_file)}.mp4"
+            )
+            if music_output.is_file():
+                relative_path = music_output.relative_to(settings.MEDIA_ROOT)
+                media_path = str(relative_path).replace("\\", "/")
+                clip["file_path"] = str(music_output)
+                clip["path"] = f"{settings.MEDIA_URL}{media_path}"
+            clip["selected_music_id"] = selection.background_music_id
+        else:
+            clip["selected_music_id"] = None
+
+        generated_clips.append(clip)
 
     return generated_clips
+
+
+def render_clip_background_music(video, clip, music):
+    """Render and persist a clip's chosen shared or private music (or silence)."""
+    source_path = Path(clip["source_file_path"])
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Generated clip file is missing: {source_path}")
+
+    music_path = None
+    if music is not None:
+        music_path = Path(music.audio_file.path)
+        if not music_path.is_file():
+            raise FileNotFoundError(f"Background music file is missing: {music_path}")
+
+    vertical_source = (
+        Path(settings.MEDIA_ROOT) / "processed" / "vertical" / str(video.id)
+        / f"vertical_clip_{clip['number']}.mp4"
+    )
+    output_path = (
+        Path(settings.MEDIA_ROOT) / "processed" / "music" / str(video.id)
+        / f"clip_{clip['number']}.mp4"
+    )
+    temp_output = output_path.with_name(f"{output_path.stem}.tmp{output_path.suffix}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if video.output_format == "vertical" and vertical_source.is_file():
+        create_vertical_short(source_path, temp_output, bgm_path=music_path)
+    elif music_path:
+        apply_background_music(source_path, temp_output, bgm_path=music_path)
+    else:
+        shutil.copy2(source_path, temp_output)
+    temp_output.replace(output_path)
+
+    ClipMusicSelection.objects.update_or_create(
+        user=video.user,
+        video=video,
+        video_path=clip["selection_path"],
+        defaults={"background_music": music},
+    )
+    return output_path
 
 
 # ============================================================
@@ -1969,600 +2005,489 @@ def get_generated_clips(video):
 
 @ratelimit(key="user_or_ip", rate="120/m", method="GET", block=True)
 def home(request):
-
-    current_user_id = (
-        request.user.id
-        if request.user.is_authenticated
-        else -1
+    """Lightweight dashboard; processing and list pages have their own routes."""
+    user = request.user
+    user_settings = (
+        UserSettings.objects.get_or_create(user=user)[0]
+        if user.is_authenticated else None
     )
+    form_initial = {}
+    if user_settings:
+        form_initial = {
+            "output_format": user_settings.default_output_format,
+            "processing_mode": user_settings.default_processing_mode,
+        }
 
-    form = _configure_video_form_for_user(
-        VideoUploadForm(),
-        request.user,
-    )
+    if request.method == "POST" and not user.is_authenticated:
+        return redirect(f"{reverse('login')}?next={quote(request.get_full_path(), safe='')}")
 
-    if request.method == "POST" and not request.user.is_authenticated:
-        login_url = reverse("login")
-        next_url = request.get_full_path()
-        return redirect(
-            f"{login_url}?next={quote(next_url, safe='')}"
-        )
-
-    generated_clips = []
-
-    youtube_upload_results = []
-
-    instagram_publish_results = []
-
-    facebook_publish_results = []
-
-    x_publish_results = []
-
-    video = None
-
-
-    # ========================================================
-    # EXISTING VIDEO FROM QUERY PARAMETER
-    # ========================================================
-
-    video_id = request.GET.get(
-        'video_id'
-    )
-
-    if video_id:
-
-        try:
-
-            if not request.user.is_authenticated:
-                video = None
-            else:
-                video = Video.objects.get(
-                    id=int(video_id),
-                    user=request.user,
-                )
-
-        except (
-            ValueError,
-            TypeError,
-            Video.DoesNotExist,
-        ):
-
-            video = None
-
-
-        if (
-            video
-            and video.status == 'completed'
-        ):
-
-            generated_clips = (
-                get_generated_clips(
-                    video
-                )
-            )
-
-
-    # ========================================================
-    # POST
-    # ========================================================
-
-    if request.method == 'POST':
-
+    form = _configure_video_form_for_user(VideoUploadForm(initial=form_initial), user)
+    if request.method == "POST":
+        allowed, subscription, used, remaining = video_entitlement(user)
+        if not allowed:
+            messages.error(request, "Your free video allowance or subscription has expired. Choose a paid plan to continue processing videos.")
+            return redirect("subscription_page")
         form = _configure_video_form_for_user(
-            VideoUploadForm(
-                request.POST,
-                request.FILES,
-            ),
-            request.user,
+            VideoUploadForm(request.POST, request.FILES, initial=form_initial), user
         )
+        if not form.is_valid():
+            return render(request, "workspace/upload_video.html", {
+                "form": form,
+                "background_music": _available_background_music_for_user(user),
+                "trending_metadata": _clean_youtube_source_metadata(
+                    request.POST.get("source_metadata", "")
+                ),
+                "trending_metadata_json": json.dumps(
+                    _clean_youtube_source_metadata(
+                        request.POST.get("source_metadata", "")
+                    ),
+                    ensure_ascii=False,
+                ),
+                "active_page": "upload",
+                "page_title": "Upload Video",
+                "video_entitlement": (subscription, used, remaining),
+                "video_allowed": allowed,
+                "video_usage_count": used,
+                "video_remaining_count": remaining,
+                "video_usage_limit": subscription.plan.video_limit if subscription and subscription.plan else None,
+            })
 
-
-        print(
-            'YOUTUBE CHANNEL POST VALUE:',
-            request.POST.get(
-                'selected_youtube_channel'
-            )
+        video = form.save(commit=False)
+        video.user = user
+        video.source_metadata = _clean_youtube_source_metadata(
+            request.POST.get("source_metadata", "")
         )
-
-
-        if form.is_valid():
-
-            video = form.save(commit=False)
-            video.user = request.user
-
-            workflow_mode = form.cleaned_data.get(
-                "workflow_mode",
-                "auto",
-            )
-
-            auto_platforms = form.cleaned_data.get(
-                "auto_platforms",
-            ) or []
-
-            video.workflow_mode = workflow_mode
-
-            # ------------------------------------------------
-            # Auto System platform selection
-            # ------------------------------------------------
-            # Only accounts whose platform is selected are saved.
-            # Manual System deliberately clears these fields because
-            # its platform/account choice happens after processing.
-
-            if workflow_mode == "auto":
-                if "youtube" not in auto_platforms:
-                    video.selected_youtube_channel = None
-                if "instagram" not in auto_platforms:
-                    video.selected_instagram_account = None
-                if "facebook" not in auto_platforms:
-                    video.selected_facebook_page = None
-                if "x" not in auto_platforms:
-                    video.selected_x_account = None
-            else:
+        workflow_mode = form.cleaned_data.get("workflow_mode", "auto")
+        auto_platforms = form.cleaned_data.get("auto_platforms") or []
+        video.workflow_mode = workflow_mode
+        if workflow_mode == "auto":
+            if "youtube" not in auto_platforms:
                 video.selected_youtube_channel = None
+            if "instagram" not in auto_platforms:
                 video.selected_instagram_account = None
+            if "facebook" not in auto_platforms:
                 video.selected_facebook_page = None
+            if "x" not in auto_platforms:
                 video.selected_x_account = None
+        else:
+            video.selected_youtube_channel = None
+            video.selected_instagram_account = None
+            video.selected_facebook_page = None
+            video.selected_x_account = None
+        video.status = "processing"
+        video.processing_progress = 0
+        video.processing_stage = "Starting processing"
+        video.save()
 
-            video.save()
-
-            # ------------------------------------------------
-            # Initial processing state
-            # ------------------------------------------------
-
-            video.status = 'processing'
-
-            video.processing_progress = 0
-
-            video.processing_stage = (
-                'Starting processing'
-            )
-
-            video.save(
-                update_fields=[
-                    'status',
-                    'processing_progress',
-                    'processing_stage',
-                    'updated_at',
-                ]
-            )
-
-
-            # ------------------------------------------------
-            # Start background processing
-            # ------------------------------------------------
-           
-                     # ------------------------------------------------
-            # Start background processing
-            # ------------------------------------------------
-
+        if settings.CELERY_BROKER_URL:
             from .tasks import process_video_task
-
-            process_video_task.delay(
-                video.id,
-            )
-
-            print(
-                f'Background processing started '
-                f'for Video ID {video.id}.'
-            )
-
-
-            # ------------------------------------------------
-            # POST -> REDIRECT -> GET
-            # ------------------------------------------------
-            #
-            # Keep the browser on a GET request after starting
-            # processing. This prevents refresh/re-submit from
-            # creating another Video and another processing job.
-
-            return redirect(
-                f'/?video_id={video.id}'
-            )
-
-
-    # ========================================================
-    # CONNECTED ACCOUNTS
-    # ========================================================
-
-    youtube_channels = (
-        YouTubeCredential.objects.filter(
-            user_id=current_user_id,
-            is_active=True
+            process_video_task.delay(video.id)
+        else:
+            Thread(
+                target=background_process_video,
+                args=(video.id,),
+                daemon=True,
+            ).start()
+        messages.success(
+            request,
+            f"Video #{video.id} received. Background processing has started.",
         )
+        return redirect(f"/?video_id={video.id}")
+
+    videos = Video.objects.filter(user=user) if user.is_authenticated else Video.objects.none()
+    video_id = request.GET.get("video_id")
+    video = None
+    if video_id and user.is_authenticated:
+        video = videos.filter(pk=video_id).first()
+    if video is None and user.is_authenticated:
+        video = videos.filter(status="completed").order_by("-updated_at").first()
+
+    generated_clips = get_generated_clips(video) if video and video.status == "completed" else []
+    entitlement = video_entitlement(user) if user.is_authenticated else (False, None, None, None)
+    upcoming = (
+        ScheduledPost.objects.filter(
+            user=user, status="scheduled", scheduled_at__gt=timezone.now()
+        ).select_related("video").order_by("scheduled_at")[:5]
+        if user.is_authenticated else ScheduledPost.objects.none()
     )
-
-    youtube_dashboard_analytics = (
-        get_youtube_dashboard_analytics(
-            youtube_channels
-        )
-    )
-
-    instagram_accounts = (
-        InstagramCredential.objects.filter(
-            user_id=current_user_id,
-            is_active=True
-        )
-    )
-
-    facebook_pages = (
-        FacebookCredential.objects.filter(
-            user_id=current_user_id,
-            is_active=True
-        )
-    )
-
-    x_accounts = (
-        XCredential.objects.filter(
-            owner_id=current_user_id,
-            is_active=True
-        )
-    )
-
-    # ========================================================
-    # REAL DASHBOARD STATISTICS
-    # ========================================================
-    #
-    # These values come directly from the database.
-    # Existing processing/publishing logic is untouched.
-    #
-
-    total_videos = Video.objects.filter(user_id=current_user_id).count()
-
-    processing_videos = Video.objects.filter(
-        user_id=current_user_id,
-        status='processing'
-    ).count()
-
-    completed_videos = Video.objects.filter(
-        user_id=current_user_id,
-        status='completed'
-    ).count()
-
-    failed_videos = Video.objects.filter(
-        user_id=current_user_id,
-        status='failed'
-    ).count()
-
-    uploaded_videos = Video.objects.filter(
-        user_id=current_user_id,
-        status='uploaded'
-    ).count()
-
-    # Only future scheduled posts are considered "Scheduled".
-    # Past records are kept in the database and are not modified.
-    current_time = timezone.now()
-
-    scheduled_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        status='scheduled',
-        scheduled_at__gt=current_time,
-    ).count()
-
-    published_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        status='published'
-    ).count()
-
-    failed_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        status='failed'
-    ).count()
-
-    processing_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        status='processing'
-    ).count()
-
-    cancelled_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        status='cancelled'
-    ).count()
-
-    # Platform-wise post statistics
-
-    youtube_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='youtube'
-    ).count()
-
-    instagram_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='instagram'
-    ).count()
-
-    facebook_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='facebook'
-    ).count()
-
-    x_posts = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='x'
-    ).count()
-
-    youtube_published = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='youtube',
-        status='published'
-    ).count()
-
-    instagram_published = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='instagram',
-        status='published'
-    ).count()
-
-    facebook_published = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='facebook',
-        status='published'
-    ).count()
-
-    x_published = ScheduledPost.objects.filter(
-        user_id=current_user_id,
-        platform='x',
-        status='published'
-    ).count()
-
-    # Recent dashboard records
-
-    recent_videos = Video.objects.filter(
-        user_id=current_user_id
-    ).order_by(
-        '-created_at'
-    )[:8]
-
-    recent_scheduled_posts = (
-        ScheduledPost.objects
-        .filter(
-            user_id=current_user_id,
-            status='scheduled',
-            scheduled_at__gt=current_time,
-        )
-        .select_related(
-            'video',
-            'youtube_channel',
-            'instagram_account',
-            'facebook_page',
-            'x_account',
-        )
-        .order_by('scheduled_at')[:8]
-    )
-
-    recent_published_posts = (
-        ScheduledPost.objects
-        .filter(
-            user_id=current_user_id,
-            status='published'
-        )
-        .select_related(
-            'video',
-            'youtube_channel',
-            'instagram_account',
-            'facebook_page',
-            'x_account',
-        )
-        .order_by('-updated_at')[:8]
-    )
-
-    recent_failed_posts = (
-        ScheduledPost.objects
-        .filter(
-            user_id=current_user_id,
-            status='failed'
-        )
-        .select_related(
-            'video',
-            'youtube_channel',
-            'instagram_account',
-            'facebook_page',
-            'x_account',
-        )
-        .order_by('-updated_at')[:8]
-    )
-
-    dashboard_stats = {
-        'total_videos': total_videos,
-        'processing_videos': processing_videos,
-        'completed_videos': completed_videos,
-        'failed_videos': failed_videos,
-        'uploaded_videos': uploaded_videos,
-
-        'scheduled_posts': scheduled_posts,
-        'published_posts': published_posts,
-        'failed_posts': failed_posts,
-        'processing_posts': processing_posts,
-        'cancelled_posts': cancelled_posts,
-
-        'youtube_posts': youtube_posts,
-        'instagram_posts': instagram_posts,
-        'facebook_posts': facebook_posts,
-        'x_posts': x_posts,
-
-        'youtube_published': youtube_published,
-        'instagram_published': instagram_published,
-        'facebook_published': facebook_published,
-        'x_published': x_published,
+    context = {
+        "form": form,
+        "video": video,
+        "generated_clips": generated_clips,
+        "advertisements": Advertisement.objects.filter(is_active=True, placement="dashboard_top").order_by("-created_at")[:8],
+        "bottom_advertisements": Advertisement.objects.filter(is_active=True, placement="dashboard_bottom").order_by("-created_at")[:8],
+        "advertisement_form": AdvertisementUploadForm() if user.is_authenticated and user.is_staff else None,
+        "recent_videos": videos.order_by("-created_at")[:6],
+        "processing_videos": videos.filter(status="processing").count(),
+        "completed_videos": videos.filter(status="completed").count(),
+        "failed_videos": videos.filter(status="failed").count(),
+        "scheduled_posts": upcoming.count(),
+        "recent_scheduled_posts": upcoming,
+        "published_posts": ScheduledPost.objects.filter(
+            user=user, status="published"
+        ).count() if user.is_authenticated else 0,
+        "active_page": "dashboard",
+        "page_title": "Dashboard",
+        "profile_picture": user_settings.profile_picture if user_settings else None,
+        "video_entitlement": entitlement[1:],
+        "video_allowed": entitlement[0],
+        "video_usage_count": entitlement[2],
+        "video_remaining_count": entitlement[3],
+        "video_usage_limit": entitlement[1].plan.video_limit if entitlement[1] and entitlement[1].plan else None,
     }
-    # ========================================================
-    # YOUTUBE TREND INTELLIGENCE
-    # ========================================================
-    #
-    # Read public YouTube most-popular videos for India.
-    # This is read-only and does not publish or schedule anything.
-    #
-    # If a YouTube Data API key is not configured, the dashboard
-    # continues normally and Gemini receives an unavailable state.
-    #
+    return render(request, "workspace/dashboard.html", context)
 
-    youtube_trend_context = {
-        "available": False,
-        "status": "api_key_not_configured",
-        "error": (
-            "YouTube Data API key is not configured. "
-            "Trend intelligence is unavailable."
-        ),
-        "region_code": "IN",
-        "videos": [],
+
+@login_required(login_url="login")
+def upload_video_page(request):
+    user_settings = UserSettings.objects.get_or_create(user=request.user)[0]
+    form = VideoUploadForm(initial={
+        "output_format": user_settings.default_output_format,
+        "processing_mode": user_settings.default_processing_mode,
+    })
+    form = _configure_video_form_for_user(form, request.user)
+    trending_metadata = _clean_youtube_source_metadata({
+        "video_id": request.GET.get("source_video_id", ""),
+        "title": request.GET.get("source_title", ""),
+        "channel_title": request.GET.get("source_channel_title", ""),
+        "channel_id": request.GET.get("source_channel_id", ""),
+        "thumbnail": request.GET.get("source_thumbnail", ""),
+        "published_at": request.GET.get("source_published_at", ""),
+        "description": request.GET.get("source_description", ""),
+        "category_id": request.GET.get("source_category_id", ""),
+        "tags": request.GET.get("source_tags", "[]"),
+    })
+    youtube_url = request.GET.get("youtube_url", "").strip()
+    if youtube_url:
+        form.initial["youtube_url"] = youtube_url
+    entitlement = video_entitlement(request.user)
+    return render(request, "workspace/upload_video.html", {
+        "form": form,
+        "background_music": _available_background_music_for_user(request.user),
+        "trending_metadata": trending_metadata,
+        "trending_metadata_json": json.dumps(trending_metadata, ensure_ascii=False),
+        "active_page": "upload",
+        "page_title": "Upload Video",
+        "video_entitlement": entitlement[1:],
+        "video_allowed": entitlement[0],
+        "video_usage_count": entitlement[2],
+        "video_remaining_count": entitlement[3],
+        "video_usage_limit": entitlement[1].plan.video_limit if entitlement[1] and entitlement[1].plan else None,
+    })
+
+
+@login_required(login_url="login")
+def subscription_page(request):
+    subscription = current_subscription(request.user)
+    allowed, subscription, used, remaining = video_entitlement(request.user)
+    limit = subscription.plan.video_limit if subscription and subscription.plan else None
+    accounts = {
+        "YouTube": YouTubeCredential.objects.filter(user=request.user, is_active=True).count(),
+        "Instagram": InstagramCredential.objects.filter(user=request.user, is_active=True).count(),
+        "Facebook": FacebookCredential.objects.filter(user=request.user, is_active=True).count(),
+        "X": XCredential.objects.filter(owner=request.user, is_active=True).count(),
     }
+    return render(request, "workspace/subscription.html", {
+        "active_page": "subscription", "page_title": "Subscription & Billing",
+        "subscription": subscription, "can_process": allowed, "videos_used": used,
+        "videos_remaining": remaining, "video_limit": limit, "account_usage": accounts,
+        "plans": SubscriptionPlan.objects.filter(is_active=True).order_by("sort_order", "price"),
+        "payments": SubscriptionPayment.objects.filter(user=request.user).select_related("plan")[:30],
+        "payment_configured": razorpay_configured(),
+        "razorpay_key_id": getattr(settings, "RAZORPAY_KEY_ID", ""),
+        "razorpay_mode": getattr(settings, "RAZORPAY_MODE", "test"),
+        "days_remaining": max(0, (subscription.expires_at.date() - timezone.localdate()).days) if subscription and subscription.expires_at else None,
+    })
 
+
+@login_required(login_url="login")
+@require_POST
+def subscription_create_order(request, plan_id):
+    plan = get_object_or_404(SubscriptionPlan, pk=plan_id, is_active=True, is_trial=False)
     try:
-        youtube_api_key = getattr(
-            settings,
-            "YOUTUBE_API_KEY",
-            "",
-        )
+        order = create_razorpay_order(request.user, plan)
+    except (RuntimeError, ValueError) as exc:
+        return JsonResponse({"error": str(exc)}, status=503)
+    except requests.RequestException:
+        logger.exception("Could not create Razorpay order for user %s", request.user.pk)
+        return JsonResponse({"error": "Payment service could not create an order. Please try again later."}, status=502)
+    return JsonResponse({"order_id": order["id"], "amount": order["amount"], "currency": order["currency"], "key": settings.RAZORPAY_KEY_ID, "name": "AI Video Repurposer", "description": plan.name})
 
-        if youtube_api_key:
-            youtube_trend_context = get_youtube_trend_context(
-                api_key=youtube_api_key,
-                region_code="IN",
-                max_results=25,
-            )
 
-    except Exception as exc:
-        print(
-            "YouTube Trend Intelligence generation failed:",
-            exc,
-        )
-
-        youtube_trend_context = {
-            "available": False,
-            "status": "api_error",
-            "error": "YouTube trend data is temporarily unavailable.",
-            "region_code": "IN",
-            "videos": [],
-        }
-
-    # ========================================================
-    # AI DASHBOARD SUGGESTIONS
-    # ========================================================
-    #
-    # Only verified dashboard data is sent to Gemini.
-    # Existing publishing/processing logic is untouched.
-    #
-
-    ai_dashboard_context = {
-        "dashboard_stats": dashboard_stats,
-
-        "youtube_analytics": youtube_dashboard_analytics,
-
-        "youtube_trends": youtube_trend_context,
-
-        "connected_accounts": {
-            "youtube": youtube_channels.count(),
-            "instagram": instagram_accounts.count(),
-            "facebook": facebook_pages.count(),
-            "x": x_accounts.count(),
-        },
-
-        "recent_activity": {
-            "recent_videos_count": recent_videos.count(),
-            "scheduled_posts_count": recent_scheduled_posts.count(),
-            "published_posts_count": recent_published_posts.count(),
-            "failed_posts_count": recent_failed_posts.count(),
-        },
-    }
-
-    ai_suggestions = []
-
+@login_required(login_url="login")
+@require_POST
+def subscription_verify_payment(request):
     try:
-        ai_result = generate_dashboard_ai_suggestions(
-            ai_dashboard_context
-        )
+        payload = json.loads(request.body or "{}")
+        payment = verify_razorpay_payment(request.user, payload.get("razorpay_order_id", ""), payload.get("razorpay_payment_id", ""), payload.get("razorpay_signature", ""))
+    except (json.JSONDecodeError, KeyError, ValueError, SubscriptionPayment.DoesNotExist) as exc:
+        return JsonResponse({"error": str(exc) or "Payment could not be verified."}, status=400)
+    except requests.RequestException:
+        logger.exception("Razorpay verification lookup failed for user %s", request.user.pk)
+        return JsonResponse({"error": "Payment is still being verified. Refresh this page in a moment."}, status=502)
+    if payment.status != "captured":
+        return JsonResponse({"error": "Payment is not captured yet. Your plan has not been activated."}, status=400)
+    return JsonResponse({"success": True})
 
-        ai_suggestions = ai_result.get(
-            "suggestions",
-            []
-        )
 
-    except Exception as exc:
-        print(
-            "Dashboard AI Suggestions generation failed:",
-            exc,
-        )
+@csrf_exempt
+@require_POST
+def razorpay_webhook(request):
+    secret = getattr(settings, "RAZORPAY_WEBHOOK_SECRET", "")
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    expected = hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest() if secret else ""
+    if not secret or not hmac.compare_digest(expected, signature):
+        return HttpResponse("Invalid webhook signature", status=400)
+    try:
+        payload = json.loads(request.body)
+        if payload.get("event") != "payment.captured":
+            return JsonResponse({"received": True})
+        data = payload["payload"]["payment"]["entity"]
+        payment = SubscriptionPayment.objects.select_related("plan", "user").get(order_id=data.get("order_id"))
+        if (data.get("status") != "captured" or data.get("amount") != int(payment.amount * 100)
+                or data.get("currency") != payment.currency or not data.get("id")):
+            return HttpResponse("Payment details do not match order", status=400)
+        data["source"] = "webhook"
+        activate_captured_payment(payment, data["id"], data)
+    except (ValueError, KeyError, TypeError, SubscriptionPayment.DoesNotExist) as exc:
+        return HttpResponse(str(exc) or "Invalid webhook payload", status=400)
+    return JsonResponse({"received": True})
 
-        ai_suggestions = []
 
-    return render(
-        request,
-        'home.html',
-        {
-            'form': form,
+@login_required(login_url="login")
+def videos_page(request):
+    return render(request, "workspace/videos.html", {
+        "videos": Video.objects.filter(user=request.user).order_by("-created_at"),
+        "active_page": "videos",
+        "page_title": "Videos",
+    })
 
-            'youtube_channels': (
-                youtube_channels
-            ),
 
-            'instagram_accounts': (
-                instagram_accounts
-            ),
+@login_required(login_url="login")
+def upcoming_schedule_page(request):
+    posts = ScheduledPost.objects.filter(
+        user=request.user, status="scheduled", scheduled_at__gt=timezone.now()
+    ).select_related("video", "youtube_channel", "instagram_account", "facebook_page", "x_account").order_by("scheduled_at")
+    return render(request, "workspace/upcoming.html", {
+        "posts": posts,
+        "active_page": "schedule",
+        "page_title": "Upcoming Schedule",
+    })
 
-            'facebook_pages': (
-                facebook_pages
-            ),
 
-            'x_accounts': (
-                x_accounts
-            ),
+@login_required(login_url="login")
+def generated_clips_page(request):
+    videos = Video.objects.filter(user=request.user, status="completed").order_by("-updated_at")[:30]
+    clip_groups = []
+    for video in videos:
+        video_clips = get_generated_clips(video)
+        for clip in video_clips:
+            clip["video_id"] = video.id
+            clip["video_title"] = f"Video #{video.id}"
+        if video_clips:
+            clip_groups.append({"video_id": video.id, "title": f"Video #{video.id}", "clips": video_clips})
+    return render(request, "workspace/clips.html", {
+        "clip_groups": clip_groups,
+        "background_music": _available_background_music_for_user(request.user),
+        "youtube_channels": YouTubeCredential.objects.filter(user=request.user, is_active=True),
+        "instagram_accounts": InstagramCredential.objects.filter(user=request.user, is_active=True),
+        "facebook_pages": FacebookCredential.objects.filter(user=request.user, is_active=True),
+        "x_accounts": XCredential.objects.filter(owner=request.user, is_active=True),
+        "active_page": "clips",
+        "page_title": "Generated Clips",
+    })
 
-            'generated_clips': (
-                generated_clips
-            ),
 
-            'youtube_upload_results': (
-                youtube_upload_results
-            ),
+@login_required(login_url="login")
+def failed_items_page(request):
+    return render(request, "workspace/failed.html", {
+        "videos": Video.objects.filter(user=request.user, status="failed").order_by("-updated_at"),
+        "posts": ScheduledPost.objects.filter(user=request.user, status="failed").select_related("video").order_by("-updated_at"),
+        "active_page": "failed",
+        "page_title": "Failed Items",
+    })
 
-            'instagram_publish_results': (
-                instagram_publish_results
-            ),
 
-            'facebook_publish_results': (
-                facebook_publish_results
-            ),
+@login_required(login_url="login")
+def analytics_page(request):
+    user_posts = ScheduledPost.objects.filter(user=request.user)
+    return render(request, "workspace/analytics.html", {
+        "total_videos": Video.objects.filter(user=request.user).count(),
+        "completed_videos": Video.objects.filter(user=request.user, status="completed").count(),
+        "published_posts": user_posts.filter(status="published").count(),
+        "scheduled_posts": user_posts.filter(status="scheduled").count(),
+        "failed_posts": user_posts.filter(status="failed").count(),
+        "platform_counts": {
+            platform: user_posts.filter(platform=platform, status="published").count()
+            for platform, _label in ScheduledPost.PLATFORM_CHOICES
+        },
+        "active_page": "analytics",
+        "page_title": "Analytics",
+    })
 
-            'x_publish_results': (
-                x_publish_results
-            ),
 
-            # Real dashboard data
-            'dashboard_stats': dashboard_stats,
-            'youtube_dashboard_analytics': (
-                youtube_dashboard_analytics
-            ),
-            'youtube_trend_context': youtube_trend_context,
-            'ai_suggestions': ai_suggestions,
-            'total_videos': total_videos,
-            'processing_videos': processing_videos,
-            'completed_videos': completed_videos,
-            'failed_videos': failed_videos,
-            'uploaded_videos': uploaded_videos,
+@login_required(login_url="login")
+def workspace_page(request):
+    """A focused workspace landing page for the sidebar Workspace entry."""
+    user_videos = Video.objects.filter(user=request.user).order_by("-created_at")
+    return render(request, "workspace/workspace.html", {
+        "videos": user_videos[:20],
+        "total_videos": user_videos.count(),
+        "processing_videos": user_videos.filter(status="processing").count(),
+        "completed_videos": user_videos.filter(status="completed").count(),
+        "failed_videos": user_videos.filter(status="failed").count(),
+        "active_page": "workspace",
+        "page_title": "Workspace",
+    })
 
-            'scheduled_posts': scheduled_posts,
-            'published_posts': published_posts,
-            'failed_posts': failed_posts,
-            'processing_posts': processing_posts,
-            'cancelled_posts': cancelled_posts,
 
-            'youtube_posts': youtube_posts,
-            'instagram_posts': instagram_posts,
-            'facebook_posts': facebook_posts,
-            'x_posts': x_posts,
-
-            'youtube_published': youtube_published,
-            'instagram_published': instagram_published,
-            'facebook_published': facebook_published,
-            'x_published': x_published,
-
-            'recent_videos': recent_videos,
-            'recent_scheduled_posts': recent_scheduled_posts,
-            'recent_published_posts': recent_published_posts,
-            'recent_failed_posts': recent_failed_posts,
-
-            'video': video,
-        }
+@login_required(login_url="login")
+def progress_report_page(request):
+    """Detailed publishing progress using the same per-user data as Analytics."""
+    user_posts = ScheduledPost.objects.filter(user=request.user)
+    youtube_data = get_youtube_dashboard_analytics(
+        YouTubeCredential.objects.filter(user=request.user, is_active=True)
     )
+    facebook_data = get_facebook_dashboard_analytics(
+        FacebookCredential.objects.filter(user=request.user, is_active=True)
+    )
+    available_youtube = [a for a in youtube_data.get("accounts", []) if a.get("available")]
+    available_facebook = [a for a in facebook_data.get("accounts", []) if a.get("available")]
+    views_values = [a.get("total_channel_views") for a in available_youtube if a.get("total_channel_views") is not None]
+    follower_values = [
+        value for value in (
+            *(a.get("subscribers") for a in available_youtube),
+            *(a.get("followers") for a in available_facebook),
+        ) if value is not None
+    ]
+    return render(request, "workspace/progress_report.html", {
+        "total_videos": Video.objects.filter(user=request.user).count(),
+        "completed_videos": Video.objects.filter(user=request.user, status="completed").count(),
+        "published_posts": user_posts.filter(status="published").count(),
+        "scheduled_posts": user_posts.filter(status="scheduled").count(),
+        "failed_posts": user_posts.filter(status="failed").count(),
+        "total_channel_views": sum(views_values) if views_values else None,
+        "total_followers": sum(follower_values) if follower_values else None,
+        "views_source_available": bool(views_values),
+        "followers_source_available": bool(follower_values),
+        "active_page": "progress",
+        "page_title": "Progress Report",
+    })
+
+
+@login_required(login_url="login")
+def youtube_trending_page(request):
+    """Show YouTube's live most-popular videos for the selected region."""
+    region_code = (request.GET.get("region", "IN") or "IN").strip().upper()
+    if not (len(region_code) == 2 and region_code.isalpha()):
+        region_code = "IN"
+    trend_data = get_youtube_trend_context(
+        api_key=settings.YOUTUBE_API_KEY,
+        region_code=region_code,
+        max_results=25,
+    )
+    for video in trend_data.get("videos", []):
+        video["tags_json"] = json.dumps(video.get("tags", []), ensure_ascii=False)
+    return render(request, "workspace/youtube_trending.html", {
+        "trend_data": trend_data,
+        "region_code": region_code,
+        "active_page": "trending",
+        "page_title": "YouTube Trending",
+    })
+
+
+def _clean_youtube_source_metadata(raw_metadata):
+    """Allow only bounded metadata from the public trends API."""
+    allowed_lengths = {
+        "video_id": 80,
+        "title": 500,
+        "channel_title": 300,
+        "channel_id": 150,
+        "thumbnail": 2000,
+        "published_at": 80,
+        "description": 8000,
+        "category_id": 40,
+    }
+    try:
+        metadata = raw_metadata
+        if isinstance(raw_metadata, str):
+            if len(raw_metadata) > 16000:
+                return {}
+            metadata = json.loads(raw_metadata)
+        if not isinstance(metadata, dict):
+            return {}
+        cleaned = {
+            key: str(metadata.get(key, ""))[:max_length]
+            for key, max_length in allowed_lengths.items()
+            if metadata.get(key) is not None
+        }
+        tags = metadata.get("tags", [])
+        if isinstance(tags, str):
+            try:
+                tags = json.loads(tags)
+            except (TypeError, json.JSONDecodeError):
+                tags = tags.split("||") if tags else []
+        if isinstance(tags, list):
+            cleaned["tags"] = [str(tag)[:200] for tag in tags[:50]]
+        return cleaned
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+
+
+@login_required(login_url="login")
+def social_accounts_page(request):
+    youtube_channels = YouTubeCredential.objects.filter(user=request.user, is_active=True)
+    instagram_accounts = InstagramCredential.objects.filter(user=request.user, is_active=True)
+    facebook_pages = FacebookCredential.objects.filter(user=request.user, is_active=True)
+    x_accounts = XCredential.objects.filter(owner=request.user, is_active=True)
+    return render(request, "workspace/accounts.html", {
+        "youtube_channels": youtube_channels,
+        "instagram_accounts": instagram_accounts,
+        "facebook_pages": facebook_pages,
+        "x_accounts": x_accounts,
+        "connected_account_count": youtube_channels.count() + instagram_accounts.count() + facebook_pages.count() + x_accounts.count(),
+        "active_page": "accounts",
+        "page_title": "Social Accounts",
+    })
+
+
+@login_required(login_url="login")
+@user_passes_test(lambda user: user.is_staff, login_url="home")
+@require_POST
+def advertisement_upload(request):
+    form = AdvertisementUploadForm(request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, "Ad upload failed: " + "; ".join(
+            error for errors in form.errors.values() for error in errors
+        ))
+        return redirect("home")
+    Advertisement.objects.create(
+        media_file=form.cleaned_data["media_file"],
+        destination_url=form.cleaned_data["destination_url"],
+        is_active=True,
+    )
+    messages.success(request, "Advertisement is now active on the dashboard.")
+    return redirect("home")
+
+
+@login_required(login_url="login")
+@require_POST
+def delete_video(request, video_id):
+    video = get_object_or_404(Video, pk=video_id, user=request.user)
+    if video.status == "processing":
+        messages.error(request, "A video cannot be deleted while it is processing.")
+        return redirect("videos_page")
+
+    media_root = Path(settings.MEDIA_ROOT).resolve()
+    if video.video_file:
+        video.video_file.delete(save=False)
+    for folder in ("viral", "normal", "vertical", "music"):
+        target = (media_root / "processed" / folder / str(video.id)).resolve()
+        if media_root in target.parents and target.is_dir():
+            shutil.rmtree(target)
+    video.delete()
+    messages.success(request, "Video and generated clips deleted.")
+    return redirect("videos_page")
 
 
 # ============================================================
@@ -2579,6 +2504,9 @@ def manual_publish(request):
             status=405,
         )
 
+    if not subscription_allows(request.user, "publishing"):
+        return JsonResponse({"success": False, "error": "Your plan does not include active publishing. Renew or upgrade to continue."}, status=402)
+
     try:
         video = get_object_or_404(
             Video,
@@ -2589,6 +2517,9 @@ def manual_publish(request):
             raise ValueError("Video processing is not completed yet.")
 
         clips, platforms, accounts = _manual_selection(request, video)
+        unavailable = [platform for platform in platforms if not subscription_allows(request.user, platform)]
+        if unavailable:
+            raise ValueError(f"Your current plan does not include {', '.join(unavailable)} publishing.")
         results = []
 
         for clip in clips:
@@ -2677,6 +2608,9 @@ def manual_schedule(request):
             status=405,
         )
 
+    if not subscription_allows(request.user, "scheduling"):
+        return JsonResponse({"success": False, "error": "Your plan does not include active scheduling. Renew or upgrade to continue."}, status=402)
+
     try:
         video = get_object_or_404(
             Video,
@@ -2687,6 +2621,9 @@ def manual_schedule(request):
             raise ValueError("Video processing is not completed yet.")
 
         clips, platforms, accounts = _manual_selection(request, video)
+        unavailable = [platform for platform in platforms if not subscription_allows(request.user, platform)]
+        if unavailable:
+            raise ValueError(f"Your current plan does not include {', '.join(unavailable)} publishing.")
         schedule_value = request.POST.get("scheduled_at", "").strip()
 
         if not schedule_value:
@@ -2709,6 +2646,28 @@ def manual_schedule(request):
 
         if scheduled_at <= timezone.now():
             raise ValueError("Schedule time must be in the future.")
+
+        selected_music_id = request.POST.get("background_music_id", "saved").strip()
+        if selected_music_id.lower() not in {"saved", "keep", ""}:
+            schedule_music = None
+            if selected_music_id.lower() not in {"none", "0", "null"}:
+                try:
+                    selected_music_pk = int(selected_music_id)
+                except ValueError as exc:
+                    raise ValueError("Invalid background music selection.") from exc
+                schedule_music = BackgroundMusic.objects.filter(
+                    Q(id=selected_music_pk, user=request.user)
+                    | Q(id=selected_music_pk, is_shared=True)
+                    | Q(id=selected_music_pk, user__isnull=True, is_default=True),
+                    is_active=True,
+                ).first()
+                if schedule_music is None:
+                    raise ValueError("That background music is not available.")
+
+            for clip in clips:
+                rendered_path = render_clip_background_music(video, clip, schedule_music)
+                clip["file_path"] = str(rendered_path)
+                clip["path"] = f"{settings.MEDIA_URL}{rendered_path.relative_to(settings.MEDIA_ROOT).as_posix()}"
 
         caption = request.POST.get(
             "caption",
@@ -2808,7 +2767,7 @@ def ratelimited_error(request, exception):
         status=429,
     )
 @login_required(login_url="login")
-@ratelimit(key="user_or_ip", rate="10/h", method="GET", block=True)
+@ratelimit(key="user_or_ip", rate="120/m", method="GET", block=True)
 def processing_status(
     request,
     video_id,
@@ -2925,6 +2884,13 @@ def youtube_callback(request):
             status=400,
             content_type="text/plain",
         )
+
+    allowed, reason = account_entitlement(
+        request.user, "youtube", existing=bool(youtube_credential and youtube_credential.user_id == request.user.id)
+    )
+    if not allowed:
+        messages.error(request, reason)
+        return redirect("subscription_page")
 
     save_youtube_credentials(
         credentials,
@@ -3073,6 +3039,13 @@ def instagram_callback(request):
             content_type="text/plain",
         )
 
+    allowed, reason = account_entitlement(
+        request.user, "instagram", existing=bool(existing_instagram and existing_instagram.user_id == request.user.id)
+    )
+    if not allowed:
+        messages.error(request, reason)
+        return redirect("subscription_page")
+
     instagram_credential = (
         save_instagram_credentials(
             long_lived_token,
@@ -3219,6 +3192,12 @@ def _save_facebook_and_instagram_credentials(
         if existing_facebook is not None and existing_facebook.user_id not in (None, owner.id):
             continue
 
+        allowed, _ = account_entitlement(
+            owner, "facebook", existing=bool(existing_facebook and existing_facebook.user_id == owner.id)
+        )
+        if not allowed:
+            continue
+
         FacebookCredential.objects.update_or_create(
             page_id=page_id,
 
@@ -3275,6 +3254,12 @@ def _save_facebook_and_instagram_credentials(
             ).first()
 
             if existing_instagram is not None and existing_instagram.user_id not in (None, owner.id):
+                continue
+
+            allowed, _ = account_entitlement(
+                owner, "instagram", existing=bool(existing_instagram and existing_instagram.user_id == owner.id)
+            )
+            if not allowed:
                 continue
 
             InstagramCredential.objects.update_or_create(
@@ -4009,6 +3994,12 @@ def x_callback(request):
                 "This X account is already connected to another user."
             )
 
+        allowed, reason = account_entitlement(
+            request.user, "x", existing=bool(existing_x and existing_x.owner_id == request.user.id)
+        )
+        if not allowed:
+            raise ValueError(reason)
+
         credential = (
             save_x_credential(
                 token_data,
@@ -4044,17 +4035,305 @@ def x_callback(request):
     )
 
 # ============================================================
-# Settings
+# Settings / Background Music
 # ============================================================
 
+# ============================================================
+# BACKGROUND MUSIC
+# ============================================================
+
+ALLOWED_BACKGROUND_MUSIC_EXTENSIONS = {
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".aac",
+    ".ogg",
+    ".flac",
+}
+MAX_BACKGROUND_MUSIC_SIZE_BYTES = 25 * 1024 * 1024
+
+
+def _available_background_music_for_user(user):
+    """
+    Return music owned by the user, shared by any uploader, or app defaults.
+    """
+    return BackgroundMusic.objects.filter(
+        Q(user=user) | Q(is_shared=True) | Q(user__isnull=True, is_default=True),
+        is_active=True,
+    ).order_by(
+        "-is_shared",
+        "-is_default",
+        "-created_at",
+    ).distinct()
+
+
 @login_required(login_url="login")
-# ============================================================
-# Settings
-# ============================================================
+@require_POST
+def background_music_upload(request):
+    """
+    Upload a track owned by the current user and shared across the app.
+    """
+    if request.method != "POST":
+        return redirect("home")
+
+    music_file = request.FILES.get("audio_file")
+    music_name = request.POST.get("name", "").strip()
+
+    if not music_file or music_file.size <= 0:
+        messages.error(request, "Choose a non-empty audio file.")
+        return redirect("upload_video_page")
+
+    extension = Path(music_file.name).suffix.lower()
+
+    if (
+        extension not in ALLOWED_BACKGROUND_MUSIC_EXTENSIONS
+        or music_file.size > MAX_BACKGROUND_MUSIC_SIZE_BYTES
+    ):
+        messages.error(request, "Use a supported audio file under 25 MB.")
+        return redirect("upload_video_page")
+
+    if not music_name:
+        music_name = Path(music_file.name).stem[:200]
+
+    music = BackgroundMusic.objects.create(
+        user=request.user,
+        name=music_name[:200],
+        audio_file=music_file,
+        is_default=False,
+        is_shared=True,
+    )
+
+    try:
+        probe = subprocess.run(
+            [
+                "ffprobe", "-v", "error", "-select_streams", "a:0",
+                "-show_entries", "stream=index", "-of", "csv=p=0",
+                music.audio_file.path,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        valid_audio = probe.returncode == 0 and bool(probe.stdout.strip())
+    except OSError:
+        valid_audio = False
+
+    if not valid_audio:
+        music.audio_file.delete(save=False)
+        music.delete()
+        messages.error(request, "The uploaded file does not contain valid audio.")
+        return redirect("upload_video_page")
+
+    messages.success(request, "Music uploaded and shared with all users.")
+    return redirect("upload_video_page")
+
+
+@login_required(login_url="login")
+@require_POST
+def background_music_delete(request, music_id):
+    """
+    Delete only music owned by the current user.
+
+    Global/default application music can never be deleted by a normal
+    user through this endpoint.
+    """
+    if request.method != "POST":
+        return redirect("home")
+
+    music = get_object_or_404(
+        BackgroundMusic,
+        id=music_id,
+        user=request.user,
+    )
+
+    if music.audio_file:
+        try:
+            music.audio_file.delete(save=False)
+        except Exception as exc:
+            logger.warning(
+                "Failed to remove background music file %s: %s",
+                music.id,
+                exc,
+            )
+
+    music.delete()
+
+    messages.success(request, "Background music deleted.")
+    return redirect("upload_video_page")
+
+
+@login_required(login_url="login")
+def save_clip_music_selection(request):
+    """
+    Save the background music selection for one generated clip.
+
+    Selection can be:
+      - empty / 0 / "none" => No Music
+      - a user-owned music item
+      - an application-wide default music item
+
+    The video and music ownership are both validated server-side.
+    """
+    if request.method != "POST":
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "POST request required.",
+            },
+            status=405,
+        )
+
+    video_id = request.POST.get("video_id", "").strip()
+    video_path = request.POST.get("video_path", "").strip()
+    music_id = request.POST.get("background_music_id", "").strip()
+
+    if not video_id or not video_path:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Video and clip path are required.",
+            },
+            status=400,
+        )
+
+    try:
+        video_id = int(video_id)
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Invalid video.",
+            },
+            status=400,
+        )
+
+    video = get_object_or_404(
+        Video,
+        id=video_id,
+        user=request.user,
+    )
+
+    generated_clips = get_generated_clips(video)
+
+    requested_path = Path(video_path)
+
+    try:
+        requested_path = requested_path.resolve()
+    except OSError:
+        requested_path = Path(video_path)
+
+    clip = next(
+        (
+            item for item in generated_clips
+            if item.get("source_file_path")
+            and Path(item["source_file_path"]).resolve() == requested_path
+        ),
+        None,
+    )
+
+    if not clip:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Invalid clip for this video.",
+            },
+            status=400,
+        )
+
+    selected_music = None
+
+    if music_id and music_id.lower() not in {
+        "0",
+        "none",
+        "null",
+    }:
+        try:
+            music_id_int = int(music_id)
+        except (TypeError, ValueError):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Invalid background music.",
+                },
+                status=400,
+            )
+
+        selected_music = (
+            BackgroundMusic.objects.filter(
+                Q(
+                    id=music_id_int,
+                    user=request.user,
+                )
+                | Q(
+                    id=music_id_int,
+                    is_shared=True,
+                )
+                | Q(
+                    id=music_id_int,
+                    user__isnull=True,
+                    is_default=True,
+                ),
+                is_active=True,
+            )
+            .first()
+        )
+
+        if not selected_music:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Background music is not available.",
+                },
+                status=403,
+            )
+
+    try:
+        output_path = render_clip_background_music(video, clip, selected_music)
+    except (FileNotFoundError, OSError, subprocess.CalledProcessError):
+        logger.exception("Could not render background music for clip %s.", clip["number"])
+        return JsonResponse(
+            {"success": False, "error": "Could not apply background music to this clip."},
+            status=500,
+        )
+
+    selection = ClipMusicSelection.objects.get(
+        user=request.user,
+        video=video,
+        video_path=clip["selection_path"],
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "selection_id": selection.id,
+            "music_id": (
+                selected_music.id
+                if selected_music
+                else None
+            ),
+            "music_name": (
+                selected_music.name
+                if selected_music
+                else "No Music"
+            ),
+            "clip_path": (
+                f"{settings.MEDIA_URL}"
+                f"{output_path.relative_to(settings.MEDIA_ROOT).as_posix()}"
+            ),
+        }
+    )
+
 
 @login_required(login_url="login")
 def settings_view(request):
     current_user = request.user
+
+    # Get or create settings for the current user
+    user_settings, created = UserSettings.objects.get_or_create(
+        user=current_user
+    )
+
+    profile_error = ""
 
     if request.method == "POST":
         first_name = request.POST.get(
@@ -4077,9 +4356,124 @@ def settings_view(request):
             ]
         )
 
+        profile_picture = request.FILES.get("profile_picture")
+        if profile_picture:
+            extension = Path(profile_picture.name).suffix.lower()
+            try:
+                profile_picture.seek(0)
+                header = profile_picture.read(12)
+                profile_picture.seek(0)
+            except OSError:
+                header = b""
+            is_png = header.startswith(b"\x89PNG\r\n\x1a\n")
+            is_jpeg = header.startswith(b"\xff\xd8\xff")
+            is_gif = header.startswith((b"GIF87a", b"GIF89a"))
+            is_webp = header.startswith(b"RIFF") and header[8:12] == b"WEBP"
+            if extension not in {".png", ".jpg", ".jpeg", ".gif", ".webp"} or not (
+                is_png or is_jpeg or is_gif or is_webp
+            ):
+                profile_error = "Profile photo must be a valid PNG, JPEG, GIF or WebP image."
+            else:
+                if user_settings.profile_picture:
+                    user_settings.profile_picture.delete(save=False)
+                user_settings.profile_picture = profile_picture
+                user_settings.save(update_fields=["profile_picture", "updated_at"])
+
+        # ================================================
+        # Video & Publishing Preferences
+        # ================================================
+
+        default_output_format = request.POST.get(
+            "default_output_format",
+            user_settings.default_output_format,
+        )
+
+        default_processing_mode = request.POST.get(
+            "default_processing_mode",
+            user_settings.default_processing_mode,
+        )
+
+        auto_publish = request.POST.get(
+            "auto_publish"
+        ) == "on"
+
+        if default_output_format not in {"vertical", "horizontal"}:
+            default_output_format = user_settings.default_output_format
+        if default_processing_mode not in {"viral", "normal"}:
+            default_processing_mode = user_settings.default_processing_mode
+
+        user_settings.default_output_format = (
+            default_output_format
+        )
+
+        user_settings.default_processing_mode = (
+            default_processing_mode
+        )
+
+        user_settings.auto_publish = auto_publish
+
+        # ================================================
+        # Schedule Preferences
+        # ================================================
+
+        timezone_value = request.POST.get(
+            "timezone",
+            user_settings.timezone,
+        ).strip()
+
+        if timezone_value:
+            try:
+                ZoneInfo(timezone_value)
+            except (ZoneInfoNotFoundError, ValueError):
+                timezone_value = user_settings.timezone
+            user_settings.timezone = timezone_value
+
+        # ================================================
+        # AI Preferences
+        # ================================================
+
+        user_settings.ai_captions = (
+            request.POST.get("ai_captions") == "on"
+        )
+
+        user_settings.ai_titles = (
+            request.POST.get("ai_titles") == "on"
+        )
+
+        user_settings.ai_descriptions = (
+            request.POST.get("ai_descriptions") == "on"
+        )
+
+        user_settings.ai_hashtags = (
+            request.POST.get("ai_hashtags") == "on"
+        )
+
+        # ================================================
+        # Notification Preferences
+        # ================================================
+
+        user_settings.processing_notifications = (
+            request.POST.get("processing_notifications") == "on"
+        )
+
+        user_settings.publishing_notifications = (
+            request.POST.get("publishing_notifications") == "on"
+        )
+
+        user_settings.account_notifications = (
+            request.POST.get("account_notifications") == "on"
+        )
+
+        user_settings.save()
+
         settings_saved = True
+
     else:
         settings_saved = False
+
+    # ================================================
+    # Connected Accounts
+    # ================================================
 
     youtube_accounts = YouTubeCredential.objects.filter(
         user=current_user,
@@ -4101,13 +4495,33 @@ def settings_view(request):
         is_active=True,
     )
 
+    # ================================================
+    # Background Music
+    # ================================================
+
+    background_music = _available_background_music_for_user(
+        current_user
+    )
+
+    my_background_music = BackgroundMusic.objects.filter(
+        user=current_user
+    ).order_by("-created_at")
+
+    # ================================================
+    # Context
+    # ================================================
+
     context = {
         "user": current_user,
+        "user_settings": user_settings,
         "youtube_accounts": youtube_accounts,
         "instagram_accounts": instagram_accounts,
         "facebook_accounts": facebook_accounts,
         "x_accounts": x_accounts,
         "settings_saved": settings_saved,
+        "profile_error": profile_error,
+        "background_music": background_music,
+        "my_background_music": my_background_music,
     }
 
     return render(

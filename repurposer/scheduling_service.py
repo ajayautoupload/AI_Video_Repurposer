@@ -39,12 +39,12 @@ MIN_SCHEDULE_LEAD_MINUTES = 60
 # GET NEXT SCHEDULE SLOTS
 # ============================================================
 
-def get_next_schedule_slots(number_of_slots):
+def get_next_schedule_slots(number_of_slots, timezone_name="Asia/Kolkata"):
     """
     Return the next safe scheduling slots.
 
-    All slots are calculated in Indian Standard Time (IST)
-    and returned as timezone-aware UTC datetimes.
+    Slots are calculated in the requested timezone and returned
+    as timezone-aware UTC datetimes.
 
     A slot is considered available only when it is at least
     MIN_SCHEDULE_LEAD_MINUTES in the future. This prevents a long
@@ -64,13 +64,14 @@ def get_next_schedule_slots(number_of_slots):
         )
     )
 
-    minimum_allowed_ist = (
+    schedule_timezone = ZoneInfo(timezone_name)
+    minimum_allowed_local = (
         minimum_allowed_utc.astimezone(
-            SCHEDULE_TIMEZONE
+            schedule_timezone
         )
     )
 
-    current_date = minimum_allowed_ist.date()
+    current_date = minimum_allowed_local.date()
 
     slots = []
 
@@ -84,10 +85,10 @@ def get_next_schedule_slots(number_of_slots):
                 current_date.day,
                 hour,
                 minute,
-                tzinfo=SCHEDULE_TIMEZONE,
+                tzinfo=schedule_timezone,
             )
 
-            if slot_datetime_ist <= minimum_allowed_ist:
+            if slot_datetime_ist <= minimum_allowed_local:
                 continue
 
             slot_datetime_utc = (

@@ -1,4 +1,5 @@
 from django import forms
+from pathlib import Path
 
 
 
@@ -90,6 +91,8 @@ class VideoUploadForm(forms.ModelForm):
 
             'selected_x_account',
 
+            'background_music',
+
 
 
             # Processing
@@ -118,7 +121,7 @@ class VideoUploadForm(forms.ModelForm):
 
                 attrs={
 
-                    'accept': 'video/*',
+                    'accept': 'video/mp4,.mp4',
 
                 }
 
@@ -174,6 +177,8 @@ class VideoUploadForm(forms.ModelForm):
 
             'selected_x_account': forms.Select(),
 
+            'background_music': forms.Select(),
+
 
 
             # ====================================================
@@ -197,6 +202,12 @@ class VideoUploadForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+
+        self.fields["background_music"].label = "Background music (optional)"
+        self.fields["background_music"].empty_label = "No background music"
+        self.fields["background_music"].help_text = (
+            "Choose a shared track to add to every generated clip, or leave this empty for no music."
+        )
 
 
 
@@ -566,6 +577,17 @@ class VideoUploadForm(forms.ModelForm):
 
         )
 
+        video_file = cleaned_data.get("video_file")
+        youtube_url = cleaned_data.get("youtube_url")
+        if not video_file and not youtube_url:
+            raise forms.ValidationError(
+                "Choose an MP4 file or provide a YouTube URL."
+            )
+        if video_file and youtube_url:
+            raise forms.ValidationError(
+                "Choose one video source at a time."
+            )
+
 
 
         # ========================================================
@@ -709,3 +731,29 @@ class VideoUploadForm(forms.ModelForm):
 
 
         return cleaned_data
+
+
+class AdvertisementUploadForm(forms.Form):
+    media_file = forms.FileField(label="Ad image or video")
+    destination_url = forms.URLField(
+        label="Click-through link",
+        required=False,
+        widget=forms.URLInput(attrs={"placeholder": "https://example.com"}),
+    )
+
+    def clean_media_file(self):
+        media_file = self.cleaned_data["media_file"]
+        extension = Path(media_file.name).suffix.lower()
+        allowed = {
+            ".jpg": 10 * 1024 * 1024,
+            ".jpeg": 10 * 1024 * 1024,
+            ".png": 10 * 1024 * 1024,
+            ".webp": 10 * 1024 * 1024,
+            ".mp4": 100 * 1024 * 1024,
+            ".webm": 100 * 1024 * 1024,
+        }
+        if extension not in allowed:
+            raise forms.ValidationError("Use PNG, JPG, WebP, MP4 or WebM.")
+        if media_file.size > allowed[extension]:
+            raise forms.ValidationError("This ad file exceeds the allowed size.")
+        return media_file

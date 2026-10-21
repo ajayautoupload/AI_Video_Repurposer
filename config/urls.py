@@ -13,9 +13,13 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import (
     HttpResponse,
+    HttpResponseForbidden,
     HttpResponseNotFound,
+    StreamingHttpResponse,
 )
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.urls import include, path 
+from django.utils import timezone
 from repurposer import auth_views
 
 
@@ -56,9 +60,7 @@ def add_media_headers(
 
     response["Accept-Ranges"] = "bytes"
 
-    response["Cache-Control"] = (
-        "public, max-age=3600, no-transform"
-    )
+    response["Cache-Control"] = "private, no-store"
 
     response["ETag"] = (
         f'"{etag}"'
@@ -85,12 +87,8 @@ def serve_media_file(
     """
     Serve media files with reliable HTTP Range support.
 
-    Important:
-    Video responses are intentionally returned as normal
-    HttpResponse objects instead of StreamingHttpResponse.
-
-    This makes the response more predictable for external
-    media fetchers such as Instagram.
+    File bodies are streamed in bounded chunks so large videos do not
+    need to be loaded into a Django worker's memory all at once.
     """
 
     if request.method not in [
@@ -106,11 +104,11 @@ def serve_media_file(
 
         return response
 
-    media_root = os.path.abspath(
+    media_root = os.path.realpath(
         str(settings.MEDIA_ROOT)
     )
 
-    requested_path = os.path.abspath(
+    requested_path = os.path.realpath(
         os.path.join(
             media_root,
             file_path,
@@ -141,6 +139,68 @@ def serve_media_file(
         return HttpResponseNotFound(
             "Media file not found."
         )
+
+    relative_path = os.path.relpath(requested_path, media_root).replace(os.sep, "/")
+    signed = False
+    token = request.GET.get("token", "")
+    if token:
+        try:
+            signed = TimestampSigner(salt="repurposer.media").unsign(
+                token,
+                max_age=24 * 60 * 60,
+            ) == relative_path
+        except (BadSignature, SignatureExpired):
+            signed = False
+
+    if not signed:
+        owner_id = None
+        parts = relative_path.split("/")
+        if len(parts) >= 3 and parts[0] == "processed":
+            try:
+                from repurposer.models import Video
+                owner_id = Video.objects.filter(pk=int(parts[2])).values_list(
+                    "user_id", flat=True
+                ).first()
+            except (ValueError, TypeError):
+                owner_id = None
+        elif len(parts) >= 2 and parts[0] == "videos":
+            from repurposer.models import Video
+            owner_id = Video.objects.filter(
+                video_file=relative_path
+            ).values_list("user_id", flat=True).first()
+        elif len(parts) >= 2 and parts[0] == "background_music":
+            from repurposer.models import BackgroundMusic
+            music = BackgroundMusic.objects.filter(
+                audio_file=relative_path
+            ).values("user_id", "is_default", "is_shared").first()
+            if music:
+                owner_id = music["user_id"]
+                if music["is_shared"] or (owner_id is None and music["is_default"]):
+                    owner_id = "global"
+        elif len(parts) >= 2 and parts[0] == "profile_pictures":
+            from repurposer.models import UserSettings
+            owner_id = UserSettings.objects.filter(
+                profile_picture=relative_path
+            ).values_list("user_id", flat=True).first()
+        elif len(parts) >= 2 and parts[0] == "advertisements":
+            from repurposer.models import Advertisement
+            if Advertisement.objects.filter(media_file=relative_path, is_active=True).exists():
+                owner_id = "global"
+        elif len(parts) >= 2 and parts[0] == "notifications" and request.user.is_authenticated:
+            from repurposer.models import AdminNotification, NotificationRecipient
+            notification_id = AdminNotification.objects.filter(image=relative_path).values_list("id", flat=True).first()
+            if notification_id and NotificationRecipient.objects.filter(
+                notification_id=notification_id,
+                user=request.user,
+                notification__is_active=True,
+                notification__scheduled_at__lte=timezone.now(),
+            ).exists():
+                owner_id = request.user.id
+
+        if not request.user.is_authenticated or not owner_id or (
+            owner_id != "global" and owner_id != request.user.id
+        ):
+            return HttpResponseForbidden("Media access denied.")
 
     file_size = os.path.getsize(
         requested_path
@@ -188,9 +248,7 @@ def serve_media_file(
 
         response["Accept-Ranges"] = "bytes"
 
-        response["Cache-Control"] = (
-            "public, max-age=3600, no-transform"
-        )
+        response["Cache-Control"] = "private, no-store"
 
         response["ETag"] = (
             f'"{etag}"'
@@ -250,9 +308,7 @@ def serve_media_file(
                 "bytes"
             )
 
-            response["Cache-Control"] = (
-                "public, max-age=3600, no-transform"
-            )
+            response["Cache-Control"] = "private, no-store"
 
             return response
 
@@ -266,15 +322,21 @@ def serve_media_file(
 
     if not range_header:
 
-        with open(
-            requested_path,
-            "rb",
-        ) as media_file:
+        def file_chunks(start=0, length=None, chunk_size=64 * 1024):
+            remaining = length
+            with open(requested_path, "rb") as media_file:
+                media_file.seek(start)
+                while remaining is None or remaining > 0:
+                    read_size = chunk_size if remaining is None else min(chunk_size, remaining)
+                    chunk = media_file.read(read_size)
+                    if not chunk:
+                        break
+                    if remaining is not None:
+                        remaining -= len(chunk)
+                    yield chunk
 
-            file_data = media_file.read()
-
-        response = HttpResponse(
-            file_data,
+        response = StreamingHttpResponse(
+            file_chunks(),
             status=200,
             content_type=content_type,
         )
@@ -287,9 +349,7 @@ def serve_media_file(
             "bytes"
         )
 
-        response["Cache-Control"] = (
-            "public, max-age=3600, no-transform"
-        )
+        response["Cache-Control"] = "private, no-store"
 
         response["ETag"] = (
             f'"{etag}"'
@@ -460,25 +520,23 @@ def serve_media_file(
     # Read requested range
     # --------------------------------
 
-    with open(
-        requested_path,
-        "rb",
-    ) as media_file:
-
-        media_file.seek(
-            start
-        )
-
-        file_data = media_file.read(
-            content_length
-        )
+    def range_chunks(chunk_size=64 * 1024):
+        remaining = content_length
+        with open(requested_path, "rb") as media_file:
+            media_file.seek(start)
+            while remaining > 0:
+                chunk = media_file.read(min(chunk_size, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+                yield chunk
 
     # --------------------------------
     # Partial response
     # --------------------------------
 
-    response = HttpResponse(
-        file_data,
+    response = StreamingHttpResponse(
+        range_chunks(),
         status=206,
         content_type=content_type,
     )
@@ -495,9 +553,7 @@ def serve_media_file(
         "bytes"
     )
 
-    response["Cache-Control"] = (
-        "public, max-age=3600, no-transform"
-    )
+    response["Cache-Control"] = "private, no-store"
 
     response["ETag"] = (
         f'"{etag}"'
@@ -524,11 +580,6 @@ def serve_media_file(
 
 
 urlpatterns = [
-    path(
-        "admin/",
-        admin.site.urls,
-    ),
-
     # Authentication
     path(
         "register/",
@@ -550,6 +601,13 @@ urlpatterns = [
     path(
         "",
         include("repurposer.urls"),
+    ),
+
+    # Keep the built-in Django admin login and model pages available after
+    # custom application admin routes (including the dashboard at /admin/).
+    path(
+        "admin/",
+        admin.site.urls,
     ),
 
     # Range-enabled media server

@@ -231,6 +231,10 @@ def get_youtube_trend_context(
                     "video_id",
                     "",
                 ),
+                "channel_id": video.get(
+                    "channel_id",
+                    "",
+                ),
                 "title": video.get(
                     "title",
                     "",
@@ -246,6 +250,18 @@ def get_youtube_trend_context(
                 "published_at": video.get(
                     "published_at",
                     "",
+                ),
+                "description": video.get(
+                    "description",
+                    "",
+                ),
+                "thumbnail": video.get(
+                    "thumbnail",
+                    "",
+                ),
+                "tags": video.get(
+                    "tags",
+                    [],
                 ),
                 "views": video.get(
                     "views",

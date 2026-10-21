@@ -1,0 +1,179 @@
+{% extends "workspace/base.html" %}
+{% block content %}
+<section class="card upload-hero">
+  <span class="badge">START HERE</span>
+  <h2>Upload a video. Create ready-to-publish clips.</h2>
+  <p class="hint">Choose an MP4 file or provide a YouTube link. Set your clip format and optional background music below.</p>
+</section>
+
+<section class="card quota-banner" aria-label="Video plan usage"><div><strong>{% if video_entitlement.0.is_grandfathered %}Legacy unlimited access{% elif video_entitlement.0.plan %}{{ video_entitlement.0.plan.name }}{% else %}Subscription needed{% endif %}</strong><span class="hint"> · {{ video_usage_count|default:0 }} videos used{% if video_usage_limit != None %} of {{ video_usage_limit }}{% endif %}{% if video_remaining_count != None %} · {{ video_remaining_count }} remaining{% endif %}</span></div><a class="btn secondary" href="{% url 'subscription_page' %}">View plans</a></section>
+<style>.quota-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}.quota-banner>div{min-width:0}@media(max-width:520px){.quota-banner{align-items:flex-start;flex-direction:column}}</style>
+
+<section class="card upload-card" aria-labelledby="upload-heading">
+  {% if trending_metadata.title %}<aside class="trending-source" aria-label="Selected YouTube video"><img src="{{ trending_metadata.thumbnail }}" alt=""><div><span class="badge">YOUTUBE TRENDING SELECTION</span><h3>{{ trending_metadata.title }}</h3><p class="hint">{{ trending_metadata.channel_title }}{% if trending_metadata.published_at %} · {{ trending_metadata.published_at|date:"M j, Y" }}{% endif %}</p><p class="hint">Video details will be saved with this processing job.</p></div></aside>{% endif %}
+  <div class="upload-heading">
+    <div><h2 id="upload-heading">Create clips</h2><p class="hint">Required: provide one video file or one YouTube URL.</p></div>
+    <span class="badge">VIDEO UPLOAD</span>
+  </div>
+  <form id="videoUploadForm" method="post" action="{% url 'home' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if trending_metadata %}<input type="hidden" name="source_metadata" value="{{ trending_metadata_json }}">{% endif %}
+    {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors %}<div class="form-alert" role="alert">Please review the highlighted fields below.</div>{% endif %}
+
+    <fieldset class="form-section">
+      <legend><span class="section-number">1</span> Video source</legend>
+      <div class="source-grid">
+        <div class="upload-field" data-upload-field="video_file">
+          {{ form.video_file.label_tag }}
+          {{ form.video_file }}
+          <p class="field-help">MP4 file. Pick a file or use the YouTube URL field, not both.</p>
+          {{ form.video_file.errors }}
+          <div id="selectedFileStatus" class="file-status" aria-live="polite">No video file selected.</div>
+          <video id="localVideoPreview" class="local-preview" controls preload="metadata" hidden></video>
+        </div>
+        <div class="upload-field" data-upload-field="youtube_url">
+          {{ form.youtube_url.label_tag }}
+          {{ form.youtube_url }}
+          <p class="field-help">Paste a public or accessible YouTube video URL.</p>
+          {{ form.youtube_url.errors }}
+          <div id="youtubeUrlStatus" class="field-help" aria-live="polite"></div>
+        </div>
+      </div>
+      <p id="sourceError" class="inline-error" role="alert" hidden>Choose a video file or enter a YouTube URL, but not both.</p>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend><span class="section-number">2</span> Publishing workflow</legend>
+      <div class="upload-field workflow-field">
+        <label for="{{ form.workflow_mode.id_for_label }}">{{ form.workflow_mode.label }} <span class="required-mark">Required</span></label>
+        {{ form.workflow_mode }}
+        <p class="field-help">Auto System uses the platforms and accounts you select. Manual System lets you review clips before publishing.</p>
+        {{ form.workflow_mode.errors }}
+      </div>
+      <div id="autoPublishOptions" class="upload-field">
+        {{ form.auto_platforms.label_tag }}
+        <div class="auto-platform-options">{{ form.auto_platforms }}</div>
+        <p class="field-help">Choose at least one connected platform for Auto System.</p>
+        {{ form.auto_platforms.errors }}
+      </div>
+      <div class="account-grid">
+        <div class="upload-field account-field" data-account-platform="youtube">{{ form.selected_youtube_channel.label_tag }}{{ form.selected_youtube_channel }}{{ form.selected_youtube_channel.errors }}</div>
+        <div class="upload-field account-field" data-account-platform="instagram">{{ form.selected_instagram_account.label_tag }}{{ form.selected_instagram_account }}{{ form.selected_instagram_account.errors }}</div>
+        <div class="upload-field account-field" data-account-platform="facebook">{{ form.selected_facebook_page.label_tag }}{{ form.selected_facebook_page }}{{ form.selected_facebook_page.errors }}</div>
+        <div class="upload-field account-field" data-account-platform="x">{{ form.selected_x_account.label_tag }}{{ form.selected_x_account }}{{ form.selected_x_account.errors }}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend><span class="section-number">3</span> Clip settings</legend>
+      <div class="settings-grid">
+        <div class="upload-field"><label for="{{ form.processing_mode.id_for_label }}">{{ form.processing_mode.label }} <span class="required-mark">Required</span></label>{{ form.processing_mode }}<p class="field-help">Viral Clip finds short highlights; Normal Cut Sequence makes sequential cuts.</p>{{ form.processing_mode.errors }}</div>
+        <div class="upload-field"><label for="{{ form.output_format.id_for_label }}">{{ form.output_format.label }} <span class="required-mark">Required</span></label>{{ form.output_format }}<p class="field-help">Vertical suits Shorts and Reels. Horizontal preserves a landscape layout.</p>{{ form.output_format.errors }}</div>
+        <div class="upload-field music-field">{{ form.background_music.label_tag }}{{ form.background_music }}<p class="field-help">Optional. Choose a shared track from the list, or select No background music to keep the source audio only.</p>{{ form.background_music.errors }}</div>
+      </div>
+    </fieldset>
+
+    <div class="upload-submit-row">
+      <button class="btn generate-button" id="generateButton" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8"/></svg><span>Generate clips</span></button>
+      <span id="uploadSubmitStatus" class="hint" role="status" aria-live="polite">Your video will be processed in the background.</span>
+    </div>
+    <div id="uploadProgress" class="upload-progress" hidden><span></span></div>
+  </form>
+</section>
+
+<section class="grid two section music-section">
+  <article class="card">
+    <h2>Share background music</h2>
+    <p class="hint">Tracks uploaded here become available to every user. Only the uploader can remove their track.</p>
+    <form method="post" action="{% url 'background_music_upload' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="field"><label for="music-name">Track name <span class="required-mark">Required</span></label><input id="music-name" name="name" maxlength="200" required></div>
+      <div class="field"><label for="music-file">Audio file <span class="required-mark">Required</span></label><input id="music-file" type="file" name="audio_file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" required><small class="field-help">Maximum 25 MB.</small></div>
+      <button class="btn secondary" type="submit">Upload and share</button>
+    </form>
+  </article>
+  <article class="card">
+    <h2>Shared music library</h2>
+    {% for music in background_music %}<div class="row music-row"><div><strong>{{ music.name }}</strong><div class="hint">{% if music.user_id == request.user.id %}Uploaded by you · Shared{% elif music.user %}Shared by {{ music.user.username }}{% else %}App music{% endif %}</div></div><div class="music-actions"><audio controls preload="none" src="{{ music.audio_file.url }}">Your browser cannot play this audio.</audio>{% if music.user_id == request.user.id %}<form method="post" action="{% url 'background_music_delete' music.id %}">{% csrf_token %}<button class="btn danger" type="submit">Remove</button></form>{% endif %}</div></div>{% empty %}<div class="empty">No shared music yet.</div>{% endfor %}
+  </article>
+</section>
+
+<style>
+  .upload-hero{margin-bottom:18px;padding:clamp(22px,4vw,40px);background:linear-gradient(120deg,#172444,#111b2d 70%)}.upload-hero h2{margin:12px 0 8px;font-size:clamp(23px,3vw,34px)}.upload-hero p{max-width:720px;margin-bottom:0}.trending-source{display:grid;grid-template-columns:minmax(100px,180px) minmax(0,1fr);gap:16px;align-items:center;margin-bottom:22px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0d1728}.trending-source img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px}.trending-source h3{margin:9px 0 4px}.trending-source p{margin:4px 0}@media(max-width:520px){.trending-source{grid-template-columns:1fr}.trending-source img{max-height:180px}}
+  .upload-card{max-width:1100px}.upload-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:10px}.upload-heading h2,.card h2{margin:0 0 8px}.upload-heading p{margin:0}.form-section{min-width:0;margin:22px 0 0;padding:20px 0 0;border:0;border-top:1px solid var(--line)}.form-section legend{display:flex;align-items:center;gap:10px;padding:0 0 14px;font-size:16px;font-weight:750}.section-number{width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:#202d45;color:#c5cbff;font-size:13px}
+  .source-grid,.settings-grid,.account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.upload-field{min-width:0;padding:14px;border:1px solid var(--line);border-radius:11px;background:#0d1728}.upload-field label{margin:0 0 8px;font-weight:700;color:#e3eaf8}.upload-field input:not([type=checkbox]),.upload-field select{width:100%;min-height:44px}.upload-field input[type=file]{padding:9px;background:#111b2d}.field-help{display:block;margin:8px 0 0;color:var(--muted);font-size:12px}.upload-field ul.errorlist{margin:8px 0 0;padding:0;list-style:none;color:#ff9ca9;font-size:13px}.form-alert{margin:14px 0;padding:12px 14px;border:1px solid #74404c;border-radius:9px;background:#482433;color:#ffd9df}.inline-error{color:#ff9ca9}.workflow-field ul,.auto-platform-options ul{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0;padding:0;list-style:none}.workflow-field li label,.auto-platform-options li label{display:flex;align-items:center;gap:8px}.account-grid{margin-top:12px}.account-field[hidden]{display:none}.music-field{grid-column:1/-1}.upload-submit-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:24px;padding-top:19px;border-top:1px solid var(--line)}.generate-button{min-height:48px;padding:0 22px;font-size:15px}.generate-button svg{width:20px;height:20px;margin-right:9px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.generate-button:disabled{opacity:.72;cursor:wait}.file-status{margin-top:9px;color:#d6def0;font-size:13px}.local-preview{display:block;width:min(100%,380px);max-height:350px;margin-top:12px;border-radius:10px;background:#05080f}.local-preview[hidden],.upload-progress[hidden]{display:none}.upload-progress{height:5px;overflow:hidden;margin-top:12px;border-radius:99px;background:#26354b}.upload-progress span{display:block;width:35%;height:100%;border-radius:99px;background:var(--accent);animation:upload-indeterminate 1.2s ease-in-out infinite alternate}@keyframes upload-indeterminate{from{transform:translateX(-100%)}to{transform:translateX(285%)}}.required-mark{margin-left:5px;color:#ffacb7;font-size:10px;font-weight:650;text-transform:uppercase}.music-section{align-items:start}.music-row{align-items:flex-start}.music-actions{display:grid;justify-items:end;gap:9px}.music-actions audio{max-width:220px;width:100%}.music-actions form{margin:0}
+  @media(max-width:700px){.source-grid,.settings-grid,.account-grid{grid-template-columns:1fr}.music-field{grid-column:auto}.upload-heading{flex-direction:column}.upload-submit-row{align-items:stretch}.generate-button{width:100%}.music-row{flex-direction:column}.music-actions{width:100%;justify-items:stretch}.music-actions audio{max-width:none}.upload-card{padding:16px}}
+</style>
+
+<script>
+(() => {
+  "use strict";
+  const form = document.getElementById("videoUploadForm");
+  if (!form) return;
+  const fileInput = document.getElementById("id_video_file");
+  const youtubeInput = document.getElementById("id_youtube_url");
+  const fileStatus = document.getElementById("selectedFileStatus");
+  const youtubeStatus = document.getElementById("youtubeUrlStatus");
+  const preview = document.getElementById("localVideoPreview");
+  const sourceError = document.getElementById("sourceError");
+  const button = document.getElementById("generateButton");
+  const submitStatus = document.getElementById("uploadSubmitStatus");
+  const progress = document.getElementById("uploadProgress");
+  const autoOptions = document.getElementById("autoPublishOptions");
+  const accountFields = [...document.querySelectorAll("[data-account-platform]")];
+  let previewUrl = "";
+  let submitting = false;
+
+  const selectedWorkflow = () => form.querySelector('[name="workflow_mode"]:checked')?.value || form.querySelector('[name="workflow_mode"]')?.value || "auto";
+  const updateAccounts = () => {
+    const automatic = selectedWorkflow() === "auto";
+    autoOptions.hidden = !automatic;
+    const selected = new Set([...form.querySelectorAll('[name="auto_platforms"]:checked')].map(input => input.value));
+    accountFields.forEach(field => { field.hidden = !automatic || !selected.has(field.dataset.accountPlatform); });
+  };
+
+  form.addEventListener("change", event => {
+    if (event.target === fileInput) {
+      const file = fileInput.files?.[0];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = "";
+      preview.hidden = true;
+      preview.removeAttribute("src");
+      if (!file) { fileStatus.textContent = "No video file selected."; return; }
+      fileStatus.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB selected`;
+      if (file.type.startsWith("video/") || /\.mp4$/i.test(file.name)) {
+        previewUrl = URL.createObjectURL(file);
+        preview.src = previewUrl;
+        preview.hidden = false;
+      }
+    }
+    if (event.target.name === "workflow_mode" || event.target.name === "auto_platforms") updateAccounts();
+  });
+  youtubeInput?.addEventListener("input", () => {
+    youtubeStatus.textContent = youtubeInput.value.trim() ? "YouTube URL entered. It will be validated when you start processing." : "";
+  });
+  window.addEventListener("pagehide", () => { if (previewUrl) URL.revokeObjectURL(previewUrl); });
+  updateAccounts();
+
+  form.addEventListener("submit", event => {
+    const hasFile = Boolean(fileInput?.files?.length);
+    const hasUrl = Boolean(youtubeInput?.value.trim());
+    if (hasFile === hasUrl) {
+      event.preventDefault();
+      sourceError.hidden = false;
+      (hasFile ? youtubeInput : fileInput).focus();
+      sourceError.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    sourceError.hidden = true;
+    if (submitting) { event.preventDefault(); return; }
+    submitting = true;
+    button.disabled = true;
+    button.querySelector("span").textContent = hasFile ? "Uploading and starting…" : "Starting processing…";
+    submitStatus.textContent = "Please keep this tab open. Processing will continue in the background.";
+    progress.hidden = false;
+  });
+})();
+</script>
+{% endblock %}

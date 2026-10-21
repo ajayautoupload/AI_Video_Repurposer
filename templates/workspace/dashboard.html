@@ -1,0 +1,76 @@
+{% extends "workspace/base.html" %}
+{% block content %}
+{% include 'workspace/_ad_slot.html' with ads=advertisements %}
+<section class="grid stats"><article class="card"><div class="stat">{{ processing_videos }}</div><div class="stat-label">Processing</div></article><article class="card"><div class="stat">{{ completed_videos }}</div><div class="stat-label">Completed videos</div></article><article class="card"><div class="stat">{{ failed_videos }}</div><div class="stat-label">Failed videos</div></article><article class="card"><div class="stat">{{ scheduled_posts }}</div><div class="stat-label">Upcoming posts</div></article></section>
+<section class="section"><div class="section-head"><div><h2>Platform progress report</h2><p class="hint">Publishing activity for your connected platforms</p></div><a href="{% url 'progress_report_page' %}">Full report</a></div><div class="grid stats">{% for platform in platform_progress %}<article class="card"><h3>{{ platform.label }}</h3><div class="row"><span>Published</span><strong>{{ platform.published }}</strong></div><div class="row"><span>Scheduled</span><strong>{{ platform.scheduled }}</strong></div><div class="row"><span>Failed</span><strong>{{ platform.failed }}</strong></div></article>{% endfor %}</div></section>
+<section class="grid two section"><article class="card"><div class="section-head"><h2>Start a video</h2><a class="btn" href="{% url 'upload_video_page' %}">Upload video</a></div><p class="hint">Add a local video or YouTube URL and optionally choose shared background music during upload.</p></article><article class="card"><div class="section-head"><h2>Upcoming schedule</h2><a href="{% url 'upcoming_schedule_page' %}">View schedule</a></div>{% for post in recent_scheduled_posts %}<div class="row"><span>{{ post.platform|title }} · Video #{{ post.video_id }}</span><span>{{ post.scheduled_at }}</span></div>{% empty %}<div class="empty">No upcoming posts.</div>{% endfor %}</article></section>
+{% if video %}<section class="section"><div class="section-head"><h2>Video #{{ video.id }} · <span id="videoStatusText">{{ video.status|title }}</span></h2><a class="btn secondary" href="{% url 'generated_clips_page' %}">Open generated clips &amp; music</a></div>{% if generated_clips %}<div class="video-grid">{% for clip in generated_clips %}<article class="card clip"><video controls preload="metadata" src="{{ clip.path }}"></video><strong>Clip {{ clip.number }}</strong><p class="hint">{{ clip.text }}</p></article>{% endfor %}</div>{% elif video.status == "processing" %}<article class="card" id="videoProcessingCard" data-status-url="{% url 'processing_status' video.id %}"><p id="videoProcessingStage">{{ video.processing_stage }}</p><progress id="videoProcessingProgress" max="100" value="{{ video.processing_progress }}"></progress> <span id="videoProcessingPercent">{{ video.processing_progress }}%</span></article>{% elif video.status == "failed" %}<article class="card messages error" role="alert"><strong>Processing failed</strong><p>{{ video.processing_stage|default:"The video could not be processed." }}</p></article>{% endif %}</section>{% endif %}
+<section class="section"><div class="section-head"><h2>Recent videos</h2><a href="{% url 'videos_page' %}">Manage videos</a></div><div class="card">{% for item in recent_videos %}<div class="row"><a href="/?video_id={{ item.id }}">Video #{{ item.id }} · {{ item.status|title }}</a><span>{{ item.created_at }}</span></div>{% empty %}<div class="empty">No videos yet.</div>{% endfor %}</div></section>
+{% include 'workspace/_ad_slot.html' with ads=bottom_advertisements %}
+<script>
+(() => {
+  const processingCard = document.getElementById('videoProcessingCard');
+  if (processingCard) {
+    const status = document.getElementById('videoStatusText');
+    const stage = document.getElementById('videoProcessingStage');
+    const progress = document.getElementById('videoProcessingProgress');
+    const percent = document.getElementById('videoProcessingPercent');
+    let refreshTimer;
+    const poll = async () => {
+      if (document.hidden) return;
+      try {
+        const response = await fetch(processingCard.dataset.statusUrl, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        if (!response.ok) return;
+        const data = await response.json();
+        if (status) status.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+        if (stage) stage.textContent = data.stage || 'Processing video…';
+        if (progress) progress.value = data.progress;
+        if (percent) percent.textContent = `${data.progress}%`;
+        if (data.completed || data.failed) {
+          window.clearInterval(refreshTimer);
+          if (data.completed) window.location.reload();
+          else if (stage) stage.textContent = data.stage || 'Processing failed. Open Failed for details.';
+        }
+      } catch (_) { /* Keep polling; temporary status network errors are recoverable. */ }
+    };
+    poll();
+    refreshTimer = window.setInterval(poll, 2000);
+    window.addEventListener('pagehide', () => window.clearInterval(refreshTimer));
+  }
+  const stop = slide => { const video = slide?.querySelector('video'); if (video) { video.pause(); video.currentTime = 0; video.muted = true; } };
+  document.querySelectorAll('.ad-audio-toggle').forEach(button => {
+    button.addEventListener('click', async event => {
+      event.preventDefault(); event.stopPropagation();
+      const video = button.closest('.ad-slide')?.querySelector('video');
+      if (!video) return;
+      video.muted = !video.muted;
+      button.setAttribute('aria-pressed', String(!video.muted));
+      button.textContent = video.muted ? 'Enable ad audio' : 'Mute ad audio';
+      if (!video.muted) { try { await video.play(); } catch (_) { video.muted = true; button.setAttribute('aria-pressed', 'false'); button.textContent = 'Enable ad audio'; } }
+    });
+  });
+  let leaving = false;
+  const carousels = [...document.querySelectorAll('.ad-carousel')];
+  const advance = carousel => {
+    const slides = [...carousel.querySelectorAll('.ad-slide')];
+    if (slides.length < 2) return;
+    let active = 0;
+    const schedule = () => window.setTimeout(() => {
+      if (leaving) return;
+      if (document.hidden) { schedule(); return; }
+      stop(slides[active]); slides[active].hidden = true;
+      active = (active + 1) % slides.length; slides[active].hidden = false;
+      const video = slides[active].querySelector('video'); if (video) video.play().catch(() => {});
+      schedule();
+    }, Math.max(3, Number(slides[active].dataset.duration) || 8) * 1000);
+    schedule();
+    window.addEventListener('pagehide', () => slides.forEach(stop));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) slides.forEach(stop); });
+  };
+  carousels.forEach(advance);
+  window.addEventListener('pagehide', () => { leaving = true; document.querySelectorAll('.ad-slide').forEach(stop); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) document.querySelectorAll('.ad-slide').forEach(stop); });
+})();
+</script>
+{% endblock %}
+

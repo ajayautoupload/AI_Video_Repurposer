@@ -23,9 +23,13 @@
             --shadow: 0 10px 30px rgba(16,24,40,.06);
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             margin: 0;
@@ -36,8 +40,15 @@
                 BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        button, input { font: inherit; }
-        a { color: inherit; }
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        a {
+            color: inherit;
+        }
 
         .app {
             min-height: 100vh;
@@ -128,11 +139,20 @@
             box-shadow: inset 3px 0 0 var(--primary);
         }
 
+        .nav-item.primary-upload {
+            background: rgba(99,91,255,.2);
+            border: 1px solid rgba(184,179,255,.35);
+            color: #fff;
+            font-weight: 750;
+        }
+
         .nav-icon {
             width: 20px;
             text-align: center;
             color: #8ea0bf;
         }
+
+        .nav-icon svg { width: 20px; height: 20px; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
         .nav-item.active .nav-icon {
             color: #b8b3ff;
@@ -240,7 +260,9 @@
             box-shadow: 0 2px 8px rgba(16,24,40,.03);
         }
 
-        .back:hover { background: #fbfcfe; }
+        .back:hover {
+            background: #fbfcfe;
+        }
 
         .layout {
             display: grid;
@@ -284,14 +306,19 @@
             cursor: pointer;
         }
 
-        .tab:hover { background: #f7f8fc; color: var(--text); }
+        .tab:hover {
+            background: #f7f8fc;
+            color: var(--text);
+        }
 
         .tab.active {
             background: var(--primary-soft);
             color: var(--primary-dark);
         }
 
-        .content { min-width: 0; }
+        .content {
+            min-width: 0;
+        }
 
         .card {
             margin-bottom: 18px;
@@ -353,6 +380,8 @@
             border-bottom: 1px solid #edf0f5;
         }
 
+        .avatar[hidden] { display: none; }
+
         .avatar {
             width: 50px;
             height: 50px;
@@ -366,8 +395,16 @@
             box-shadow: 0 8px 20px rgba(99,91,255,.18);
         }
 
-        .profile-name { font-size: 14px; font-weight: 800; }
-        .profile-email { margin-top: 3px; color: var(--muted); font-size: 11px; }
+        .profile-name {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .profile-email {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 11px;
+        }
 
         .profile-grid {
             display: grid;
@@ -387,7 +424,8 @@
             font-weight: 750;
         }
 
-        .field input {
+        .field input,
+        .field select {
             width: 100%;
             height: 43px;
             padding: 0 12px;
@@ -400,9 +438,14 @@
             transition: .18s ease;
         }
 
-        .field input:focus {
+        .field input:focus,
+        .field select:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(99,91,255,.10);
+        }
+
+        .field select {
+            cursor: pointer;
         }
 
         .readonly {
@@ -447,7 +490,10 @@
             box-shadow: 0 7px 18px rgba(99,91,255,.20);
         }
 
-        .save:disabled { opacity: .7; cursor: wait; }
+        .save:disabled {
+            opacity: .7;
+            cursor: wait;
+        }
 
         .success {
             display: flex;
@@ -521,8 +567,14 @@
             font-weight: 900;
         }
 
-        .account-copy { min-width: 0; }
-        .account-copy strong { display: block; font-size: 12px; }
+        .account-copy {
+            min-width: 0;
+        }
+
+        .account-copy strong {
+            display: block;
+            font-size: 12px;
+        }
 
         .account-name {
             display: block;
@@ -573,9 +625,11 @@
             font-weight: 800;
         }
 
-        .connect:hover { background: var(--primary-dark); }
+        .connect:hover {
+            background: var(--primary-dark);
+        }
 
-        /* ---------- Security / future ---------- */
+        /* ---------- Security ---------- */
 
         .security-row {
             display: flex;
@@ -588,7 +642,11 @@
             background: #fbfcfe;
         }
 
-        .security-row h3 { margin: 0; font-size: 12px; }
+        .security-row h3 {
+            margin: 0;
+            font-size: 12px;
+        }
+
         .security-row p {
             margin: 5px 0 0;
             color: var(--muted);
@@ -609,27 +667,127 @@
             font-weight: 800;
         }
 
-        .password:hover { background: #f8f9fb; }
-
-        .future-grid {
-            display: grid;
-            grid-template-columns: repeat(2,minmax(0,1fr));
-            gap: 11px;
+        .password:hover {
+            background: #f8f9fb;
         }
 
-        .future {
-            padding: 14px;
-            border: 1px dashed #d7dce6;
-            border-radius: 11px;
-            background: #fbfcfe;
+        button.password {
+            color: var(--text);
+            cursor: pointer;
+            font: inherit;
         }
 
-        .future strong { font-size: 11px; }
-        .future p {
-            margin: 5px 0 0;
+        /* ---------- Preferences ---------- */
+
+        .preference-group {
+            padding: 17px 0;
+            border-top: 1px solid #edf0f5;
+        }
+
+        .preference-group:first-of-type {
+            padding-top: 0;
+            border-top: 0;
+        }
+
+        .preference-heading {
+            margin-bottom: 14px;
+        }
+
+        .preference-heading strong {
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .preference-heading span {
+            display: block;
+            margin-top: 4px;
             color: var(--muted);
             font-size: 10px;
             line-height: 1.5;
+        }
+
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 10px;
+        }
+
+        .switch-row {
+            position: relative;
+            min-height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 14px;
+            border: 1px solid #e7eaf0;
+            border-radius: 11px;
+            background: #fbfcfe;
+            cursor: pointer;
+            transition: .18s ease;
+        }
+
+        .switch-row:hover {
+            border-color: #d4dae5;
+            background: #fff;
+        }
+
+        .switch-row > span:first-child {
+            min-width: 0;
+        }
+
+        .switch-row strong {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .switch-row small {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
+        .switch-row input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .switch {
+            position: relative;
+            width: 38px;
+            height: 21px;
+            flex: 0 0 38px;
+            border-radius: 999px;
+            background: #d0d5dd;
+            transition: .18s ease;
+        }
+
+        .switch::after {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(16,24,40,.20);
+            transition: .18s ease;
+        }
+
+        .switch-row input:checked + .switch {
+            background: var(--primary);
+        }
+
+        .switch-row input:checked + .switch::after {
+            transform: translateX(17px);
         }
 
         /* ---------- Responsive ---------- */
@@ -641,16 +799,31 @@
                 padding: 18px 10px;
             }
 
-            .brand { justify-content: center; padding-left: 0; padding-right: 0; }
+            .brand {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
             .brand-copy,
             .nav-label,
             .nav-item span:not(.nav-icon),
-            .engine { display: none; }
+            .engine {
+                display: none;
+            }
 
-            .nav-item { justify-content: center; padding: 11px; }
-            .nav-icon { width: auto; }
+            .nav-item {
+                justify-content: center;
+                padding: 11px;
+            }
 
-            .layout { grid-template-columns: 1fr; }
+            .nav-icon {
+                width: auto;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
 
             .settings-nav {
                 position: sticky;
@@ -661,14 +834,42 @@
                 gap: 4px;
             }
 
-            .settings-label { display: none; }
-            .tab { width: auto; min-width: max-content; }
+            .settings-label {
+                display: none;
+            }
+
+            .tab {
+                width: auto;
+                min-width: max-content;
+            }
         }
 
         @media (max-width: 620px) {
-            .sidebar { display: none; }
+            .sidebar {
+                position: fixed;
+                inset: 0 auto 0 0;
+                z-index: 101;
+                width: min(290px, 84vw);
+                min-width: 0;
+                height: 100dvh;
+                overflow-y: auto;
+                transform: translateX(-105%);
+                visibility: hidden;
+                transition: transform .22s ease, visibility .22s;
+            }
 
-            .container { padding: 17px 13px 32px; }
+            .sidebar.is-open { transform: translateX(0); visibility: visible; }
+            .sidebar .brand { justify-content: flex-start; padding: 8px 10px 24px; }
+            .sidebar .brand-copy, .sidebar .nav-label, .sidebar .nav-item span:not(.nav-icon), .sidebar .engine { display: initial; }
+            .sidebar .nav-label { display: block; }
+            .sidebar .nav-item { justify-content: flex-start; padding: 11px 12px; }
+            .sidebar-backdrop { position: fixed; inset: 0; z-index: 100; background: #050912b8; }
+            .sidebar-backdrop[hidden] { display: none; }
+            .mobile-menu-button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text); font-weight: 700; }
+
+            .container {
+                padding: 17px 13px 32px;
+            }
 
             .mobile-bar {
                 display: flex;
@@ -702,13 +903,20 @@
                 margin-bottom: 17px;
             }
 
-            .back { width: 100%; }
+            .back {
+                width: 100%;
+            }
 
-            .card { padding: 17px; }
+            .card {
+                padding: 17px;
+            }
 
             .profile-grid,
-            .accounts,
-            .future-grid {
+            .accounts {
+                grid-template-columns: 1fr;
+            }
+
+            .toggle-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -726,8 +934,13 @@
                 justify-content: center;
             }
 
-            .actions { justify-content: stretch; }
-            .save { width: 100%; }
+            .actions {
+                justify-content: stretch;
+            }
+
+            .save {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -736,157 +949,289 @@
 
 <div class="app">
 
-    <aside class="sidebar">
+    <aside class="sidebar" id="settingsSidebar" aria-label="Main navigation">
+
         <div class="brand">
-            <div class="brand-icon">✦</div>
+            <div class="brand-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></div>
+
             <div class="brand-copy">
                 <div class="brand-title">AI Video Repurposer</div>
                 <div class="brand-subtitle">AI Content Automation</div>
             </div>
         </div>
 
-        <div class="nav-label">Workspace</div>
+        <div class="nav-label">Main menu</div>
 
         <nav class="nav">
+
+            <a href="{% url 'upload_video_page' %}" class="nav-item primary-upload">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/></svg></span>
+                <span>Video Upload</span>
+            </a>
+
+            <a href="{% url 'workspace_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg></span>
+                <span>Workspace</span>
+            </a>
+
             <a href="{% url 'home' %}" class="nav-item">
-                <span class="nav-icon">⌂</span><span>Dashboard</span>
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg></span>
+                <span>Dashboard</span>
             </a>
-            <a href="{% url 'home' %}#create" class="nav-item">
-                <span class="nav-icon">▣</span><span>Videos</span>
+
+            <a href="{% url 'videos_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></span>
+                <span>Videos</span>
             </a>
-            <a href="{% url 'home' %}#create" class="nav-item">
-                <span class="nav-icon">↑</span><span>Upload Video</span>
+
+            <a href="{% url 'upcoming_schedule_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span>
+                <span>Upcoming Schedule</span>
             </a>
-            <a href="{% url 'home' %}#scheduled" class="nav-item">
-                <span class="nav-icon">◷</span><span>Scheduled</span>
+
+            <a href="{% url 'generated_clips_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M7 3h14v3M10 6l4 5-4 5z"/></svg></span>
+                <span>Generated Clips</span>
             </a>
-            <a href="{% url 'home' %}#published" class="nav-item">
-                <span class="nav-icon">✓</span><span>Generated Clips</span>
+
+            <a href="{% url 'failed_items_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m10.3 4.3-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-2.7l-8-14a2 2 0 0 0-3.4 0zM12 9v4m0 4h.01"/></svg></span>
+                <span>Failed</span>
             </a>
-            <a href="{% url 'home' %}#failed" class="nav-item">
-                <span class="nav-icon">×</span><span>Failed</span>
+
+            <a href="{% url 'analytics_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M8 15l4-4 3 3 6-7"/></svg></span>
+                <span>Analytics</span>
             </a>
-            <a href="{% url 'home' %}#analytics" class="nav-item">
-                <span class="nav-icon">▥</span><span>Analytics</span>
+
+            <a href="{% url 'progress_report_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M8 15l4-4 3 3 6-7"/></svg></span>
+                <span>Progress Report</span>
             </a>
-            <a href="{% url 'home' %}#accounts" class="nav-item">
-                <span class="nav-icon">◎</span><span>Social Accounts</span>
+
+            <a href="{% url 'youtube_trending_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-9M15 6h6v6M3 21h18"/></svg></span>
+                <span>YouTube Trending</span>
             </a>
+
+            <a href="{% url 'social_accounts_page' %}" class="nav-item">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                <span>Social Accounts</span>
+            </a>
+
             <a href="{% url 'settings' %}" class="nav-item active">
-                <span class="nav-icon">⚙</span><span>Settings</span>
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4L7.3 15a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a8 8 0 0 1 0 2z"/></svg></span>
+                <span>Settings</span>
             </a>
+
+
+
         </nav>
 
         <div class="engine">
             <div class="engine-label">Processing Engine</div>
             <div class="engine-name">AI Repurposing Engine</div>
+
             <div class="engine-status">
                 <span class="dot"></span>
                 <span>System Online</span>
             </div>
         </div>
+
     </aside>
+    <div class="sidebar-backdrop" id="settingsSidebarBackdrop" hidden></div>
 
     <main class="main">
+
         <div class="container">
 
             <div class="mobile-bar">
+
                 <div class="mobile-brand">
                     <span class="mobile-icon">✦</span>
                     <span>AI Video Repurposer</span>
                 </div>
-                <a href="{% url 'home' %}" class="back">Dashboard</a>
+                <button class="mobile-menu-button" id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSidebar">☰ Menu</button>
+
             </div>
 
             <header class="header">
+
                 <div>
-                    <div class="eyebrow">Workspace Settings</div>
+                    <div class="eyebrow">Account Settings</div>
+
                     <h1>Settings</h1>
+
                     <p>
-                        Manage your profile, connected social accounts and
-                        account security from one place.
+                        Manage your profile and account security from one place.
                     </p>
                 </div>
+                <button class="back" id="settingsBackButton" type="button" aria-label="Go back to the previous section">← Go back</button>
 
-                <a href="{% url 'home' %}" class="back">
-                    ← Back to Dashboard
-                </a>
             </header>
 
             <div class="layout">
 
                 <aside class="settings-nav">
+
                     <div class="settings-label">Settings</div>
 
                     <button type="button" class="tab active" data-target="profile">
-                        <span>◎</span><span>Profile</span>
-                    </button>
-
-                    <button type="button" class="tab" data-target="accounts">
-                        <span>◉</span><span>Connected Accounts</span>
+                        <span>◎</span>
+                        <span>Profile</span>
                     </button>
 
                     <button type="button" class="tab" data-target="security">
-                        <span>⌁</span><span>Security</span>
+                        <span>⌁</span>
+                        <span>Security</span>
                     </button>
 
                     <button type="button" class="tab" data-target="preferences">
-                        <span>☷</span><span>Preferences</span>
+                        <span>☷</span>
+                        <span>Preferences</span>
                     </button>
+
                 </aside>
 
                 <div class="content">
 
                     <!-- Profile -->
+
                     <section class="card" id="profile">
 
                         <div class="card-head">
+
                             <div>
                                 <div class="kicker">Account</div>
                                 <h2>Profile</h2>
-                                <p>Update the basic information used for your workspace.</p>
+                                <p>
+                                    Update the basic information used for your workspace.
+                                </p>
                             </div>
+
                             <span class="badge">PROFILE</span>
+
                         </div>
 
                         {% if settings_saved %}
                             <div class="success" id="successMessage">
                                 <span class="success-icon">✓</span>
-                                <span>Profile updated successfully.</span>
+                                <span>Settings updated successfully.</span>
                             </div>
                         {% endif %}
 
                         <div class="profile-summary">
-                            <div class="avatar">{{ user.username|first|upper }}</div>
+
+                            <img class="avatar" id="profileAvatar" {% if user_settings.profile_picture %}src="{{ user_settings.profile_picture.url }}"{% else %}hidden{% endif %} alt="Profile photo" style="object-fit:cover">
+                            <div class="avatar" id="profileAvatarFallback" {% if user_settings.profile_picture %}hidden{% endif %}>
+                                {{ user.username|first|upper }}
+                            </div>
+
                             <div>
-                                <div class="profile-name">{{ user.username }}</div>
+                                <div class="profile-name">
+                                    {{ user.username }}
+                                </div>
+
                                 <div class="profile-email">
                                     {{ user.email|default:"Email not available" }}
                                 </div>
                             </div>
+
                         </div>
 
-                        <form method="POST" id="profileForm">
+                        <form method="POST" id="profileForm" enctype="multipart/form-data">
+
                             {% csrf_token %}
+
+                            <!-- Preserve current preferences when profile is saved -->
+                            <input
+                                type="hidden"
+                                name="default_output_format"
+                                value="{{ user_settings.default_output_format }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="default_processing_mode"
+                                value="{{ user_settings.default_processing_mode }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="timezone"
+                                value="{{ user_settings.timezone }}"
+                            >
+
+                            {% if user_settings.auto_publish %}
+                                <input type="hidden" name="auto_publish" value="on">
+                            {% endif %}
+
+                            {% if user_settings.ai_captions %}
+                                <input type="hidden" name="ai_captions" value="on">
+                            {% endif %}
+
+                            {% if user_settings.ai_titles %}
+                                <input type="hidden" name="ai_titles" value="on">
+                            {% endif %}
+
+                            {% if user_settings.ai_descriptions %}
+                                <input type="hidden" name="ai_descriptions" value="on">
+                            {% endif %}
+
+                            {% if user_settings.ai_hashtags %}
+                                <input type="hidden" name="ai_hashtags" value="on">
+                            {% endif %}
+
+                            {% if user_settings.processing_notifications %}
+                                <input type="hidden" name="processing_notifications" value="on">
+                            {% endif %}
+
+                            {% if user_settings.publishing_notifications %}
+                                <input type="hidden" name="publishing_notifications" value="on">
+                            {% endif %}
+
+                            {% if user_settings.account_notifications %}
+                                <input type="hidden" name="account_notifications" value="on">
+                            {% endif %}
 
                             <div class="profile-grid">
 
                                 <div class="field">
+                                    <label for="profile_picture">Profile photo</label>
+                                    <input type="file" id="profile_picture" name="profile_picture" accept="image/png,image/jpeg,image/gif,image/webp" aria-describedby="profilePictureHelp">
+                                    <small id="profilePictureHelp">PNG, JPEG, GIF or WebP. Preview updates when a file is selected.</small>
+                                    {% if profile_error %}<small style="color:#b42318">{{ profile_error }}</small>{% endif %}
+                                </div>
+
+                                <div class="field">
                                     <label>Username</label>
-                                    <div class="readonly">{{ user.username }}</div>
-                                    <small>Username is managed by your account.</small>
+
+                                    <div class="readonly">
+                                        {{ user.username }}
+                                    </div>
+
+                                    <small>
+                                        Username is managed by your account.
+                                    </small>
                                 </div>
 
                                 <div class="field">
                                     <label>Email</label>
+
                                     <div class="readonly">
                                         {{ user.email|default:"Not available" }}
                                     </div>
-                                    <small>Email is read-only here.</small>
+
+                                    <small>
+                                        Email is read-only here.
+                                    </small>
                                 </div>
 
                                 <div class="field">
-                                    <label for="first_name">First Name</label>
+                                    <label for="first_name">
+                                        First Name
+                                    </label>
+
                                     <input
                                         type="text"
                                         id="first_name"
@@ -899,7 +1244,10 @@
                                 </div>
 
                                 <div class="field">
-                                    <label for="last_name">Last Name</label>
+                                    <label for="last_name">
+                                        Last Name
+                                    </label>
+
                                     <input
                                         type="text"
                                         id="last_name"
@@ -914,175 +1262,62 @@
                             </div>
 
                             <div class="actions">
-                                <button type="submit" class="save" id="saveProfileBtn">
+
+                                <button
+                                    type="submit"
+                                    class="save"
+                                    id="saveProfileBtn"
+                                >
                                     Save Changes
                                 </button>
+
                             </div>
+
                         </form>
-                    </section>
 
-                    <!-- Connected Accounts -->
-                    <section class="card" id="accounts">
-
-                        <div class="card-head">
+                        <div class="security-row profile-signout">
                             <div>
-                                <div class="kicker">Social</div>
-                                <h2>Connected Accounts</h2>
-                                <p>
-                                    Manage the platforms available for publishing.
-                                </p>
+                                <h3>Sign out</h3>
+                                <p>End this session on this device.</p>
                             </div>
-                            <span class="badge">SOCIAL</span>
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="password">Log out</button>
+                            </form>
                         </div>
 
-                        <div class="accounts">
-
-                            <div class="account">
-                                <div class="account-main">
-                                    <div class="platform">▶</div>
-                                    <div class="account-copy">
-                                        <strong>YouTube</strong>
-
-                                        {% if youtube_accounts %}
-                                            {% for account in youtube_accounts %}
-                                                <span class="account-name">
-                                                    {{ account.channel_name }}
-                                                </span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="account-name">
-                                                No YouTube channel connected
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="account-actions">
-                                    {% if youtube_accounts %}
-                                        <span class="status">Connected</span>
-                                    {% else %}
-                                        <a href="{% url 'youtube_login' %}" class="connect">
-                                            Connect
-                                        </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <div class="account">
-                                <div class="account-main">
-                                    <div class="platform">◎</div>
-                                    <div class="account-copy">
-                                        <strong>Instagram</strong>
-
-                                        {% if instagram_accounts %}
-                                            {% for account in instagram_accounts %}
-                                                <span class="account-name">
-                                                    {{ account.account_name }}
-                                                </span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="account-name">
-                                                No Instagram account connected
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="account-actions">
-                                    {% if instagram_accounts %}
-                                        <span class="status">Connected</span>
-                                    {% else %}
-                                        <a href="{% url 'instagram_login' %}" class="connect">
-                                            Connect
-                                        </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <div class="account">
-                                <div class="account-main">
-                                    <div class="platform">f</div>
-                                    <div class="account-copy">
-                                        <strong>Facebook</strong>
-
-                                        {% if facebook_accounts %}
-                                            {% for account in facebook_accounts %}
-                                                <span class="account-name">
-                                                    {{ account.page_name }}
-                                                </span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="account-name">
-                                                No Facebook page connected
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="account-actions">
-                                    {% if facebook_accounts %}
-                                        <span class="status">Connected</span>
-                                    {% else %}
-                                        <a href="{% url 'facebook_login' %}" class="connect">
-                                            Connect
-                                        </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <div class="account">
-                                <div class="account-main">
-                                    <div class="platform">𝕏</div>
-                                    <div class="account-copy">
-                                        <strong>X</strong>
-
-                                        {% if x_accounts %}
-                                            {% for account in x_accounts %}
-                                                <span class="account-name">
-                                                    @{{ account.username }}
-                                                </span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="account-name">
-                                                No X account connected
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="account-actions">
-                                    {% if x_accounts %}
-                                        <span class="status">Connected</span>
-                                    {% else %}
-                                        <a href="{% url 'x_login' %}" class="connect">
-                                            Connect
-                                        </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                        </div>
                     </section>
 
                     <!-- Security -->
+
                     <section class="card" id="security">
 
                         <div class="card-head">
+
                             <div>
                                 <div class="kicker">Protection</div>
                                 <h2>Security</h2>
-                                <p>Keep your AI Video Repurposer account protected.</p>
+
+                                <p>
+                                    Keep your AI Video Repurposer account protected.
+                                </p>
                             </div>
+
                             <span class="badge">SECURITY</span>
+
                         </div>
 
                         <div class="security-row">
+
                             <div>
+
                                 <h3>Account Password</h3>
+
                                 <p>
                                     Use the existing secure password reset flow
                                     to change your password.
                                 </p>
+
                             </div>
 
                             <a
@@ -1091,80 +1326,476 @@
                             >
                                 Change Password
                             </a>
+
                         </div>
+
                     </section>
 
                     <!-- Preferences -->
+
                     <section class="card" id="preferences">
 
                         <div class="card-head">
+
                             <div>
-                                <div class="kicker">Workspace</div>
+                                <div class="kicker">Defaults &amp; preferences</div>
                                 <h2>Preferences</h2>
+
                                 <p>
-                                    These controls are ready for the next settings phase.
+                                    Control your default video, scheduling,
+                                    AI and notification preferences.
                                 </p>
                             </div>
-                            <span class="badge">NEXT</span>
+
+                            <span class="badge">SETTINGS</span>
+
                         </div>
 
-                        <div class="future-grid">
-                            <div class="future">
-                                <strong>Video & Publishing</strong>
-                                <p>
-                                    Default output format, processing mode,
-                                    captions and publishing preferences.
-                                </p>
+                        <form method="POST" id="preferencesForm">
+
+                            {% csrf_token %}
+
+                            <!-- Video & Publishing -->
+
+                            <div class="preference-group">
+
+                                <div class="preference-heading">
+
+                                    <strong>
+                                        Video &amp; Publishing
+                                    </strong>
+
+                                    <span>
+                                        Default behavior for newly processed videos.
+                                    </span>
+
+                                </div>
+
+                                <div class="profile-grid">
+
+                                    <div class="field">
+
+                                        <label for="default_output_format">
+                                            Default Output Format
+                                        </label>
+
+                                        <select
+                                            id="default_output_format"
+                                            name="default_output_format"
+                                        >
+
+                                            <option
+                                                value="vertical"
+                                                {% if user_settings.default_output_format == "vertical" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                Vertical 1080x1920
+                                            </option>
+
+                                            <option
+                                                value="horizontal"
+                                                {% if user_settings.default_output_format == "horizontal" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                Horizontal 1920x1080
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+                                    <div class="field">
+
+                                        <label for="default_processing_mode">
+                                            Default Processing Mode
+                                        </label>
+
+                                        <select
+                                            id="default_processing_mode"
+                                            name="default_processing_mode"
+                                        >
+
+                                            <option
+                                                value="viral"
+                                                {% if user_settings.default_processing_mode == "viral" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                Viral Clip
+                                            </option>
+
+                                            <option
+                                                value="normal"
+                                                {% if user_settings.default_processing_mode == "normal" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                Normal Cut Sequence
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+                                </div>
+
+                                <label class="switch-row">
+
+                                    <span>
+                                        <strong>Auto Publish</strong>
+
+                                        <small>
+                                            Automatically publish processed
+                                            content when publishing is ready.
+                                        </small>
+                                    </span>
+
+                                    <input
+                                        type="checkbox"
+                                        name="auto_publish"
+                                        {% if user_settings.auto_publish %}
+                                            checked
+                                        {% endif %}
+                                    >
+
+                                    <span class="switch"></span>
+
+                                </label>
+
                             </div>
 
-                            <div class="future">
-                                <strong>Schedule</strong>
-                                <p>
-                                    Timezone, default posting times and daily
-                                    publishing preferences.
-                                </p>
+                            <!-- Schedule -->
+
+                            <div class="preference-group">
+
+                                <div class="preference-heading">
+
+                                    <strong>
+                                        Schedule
+                                    </strong>
+
+                                    <span>
+                                        Choose the timezone used for your
+                                        publishing schedule.
+                                    </span>
+
+                                </div>
+
+                                <div class="field">
+
+                                    <label for="timezone">
+                                        Timezone
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="timezone"
+                                        name="timezone"
+                                        value="{{ user_settings.timezone }}"
+                                        placeholder="Asia/Kolkata"
+                                    >
+
+                                    <small>
+                                        Example: Asia/Kolkata
+                                    </small>
+
+                                </div>
+
                             </div>
 
-                            <div class="future">
-                                <strong>AI Settings</strong>
-                                <p>
-                                    AI captions, titles, descriptions,
-                                    hashtags and generation preferences.
-                                </p>
+                            <!-- AI Settings -->
+
+                            <div class="preference-group">
+
+                                <div class="preference-heading">
+
+                                    <strong>
+                                        AI Settings
+                                    </strong>
+
+                                    <span>
+                                        Choose which AI-generated metadata
+                                        should be enabled.
+                                    </span>
+
+                                </div>
+
+                                <div class="toggle-grid">
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>AI Captions</strong>
+
+                                            <small>
+                                                Generate captions automatically.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="ai_captions"
+                                            {% if user_settings.ai_captions %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>AI Titles</strong>
+
+                                            <small>
+                                                Generate optimized titles automatically.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="ai_titles"
+                                            {% if user_settings.ai_titles %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>AI Descriptions</strong>
+
+                                            <small>
+                                                Generate video descriptions automatically.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="ai_descriptions"
+                                            {% if user_settings.ai_descriptions %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>AI Hashtags</strong>
+
+                                            <small>
+                                                Generate relevant hashtags automatically.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="ai_hashtags"
+                                            {% if user_settings.ai_hashtags %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                </div>
+
                             </div>
 
-                            <div class="future">
-                                <strong>Notifications</strong>
-                                <p>
-                                    Processing, publishing and important
-                                    account notifications.
-                                </p>
+                            <!-- Notifications -->
+
+                            <div class="preference-group">
+
+                                <div class="preference-heading">
+
+                                    <strong>
+                                        Notifications
+                                    </strong>
+
+                                    <span>
+                                        Choose which important events
+                                        you want to receive.
+                                    </span>
+
+                                </div>
+
+                                <div class="toggle-grid">
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>
+                                                Processing Notifications
+                                            </strong>
+
+                                            <small>
+                                                Notify when video processing changes.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="processing_notifications"
+                                            {% if user_settings.processing_notifications %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>
+                                                Publishing Notifications
+                                            </strong>
+
+                                            <small>
+                                                Notify when content is published.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="publishing_notifications"
+                                            {% if user_settings.publishing_notifications %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                    <label class="switch-row">
+
+                                        <span>
+                                            <strong>
+                                                Account Notifications
+                                            </strong>
+
+                                            <small>
+                                                Notify about important account activity.
+                                            </small>
+                                        </span>
+
+                                        <input
+                                            type="checkbox"
+                                            name="account_notifications"
+                                            {% if user_settings.account_notifications %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <span class="switch"></span>
+
+                                    </label>
+
+                                </div>
+
                             </div>
-                        </div>
+
+                            <div class="actions">
+
+                                <button
+                                    type="submit"
+                                    class="save"
+                                    id="savePreferencesBtn"
+                                >
+                                    Save Preferences
+                                </button>
+
+                            </div>
+
+                        </form>
+
                     </section>
 
                 </div>
+
             </div>
+
         </div>
+
     </main>
+
 </div>
 
 <script>
 (() => {
     "use strict";
 
+    const sidebar = document.getElementById("settingsSidebar");
+    const menuButton = document.getElementById("settingsMenuButton");
+    const backdrop = document.getElementById("settingsSidebarBackdrop");
+    const closeSidebar = () => {
+        sidebar?.classList.remove("is-open");
+        backdrop?.setAttribute("hidden", "");
+        menuButton?.setAttribute("aria-expanded", "false");
+    };
+    if (sidebar && menuButton && backdrop) {
+        menuButton.addEventListener("click", () => {
+            const open = !sidebar.classList.contains("is-open");
+            sidebar.classList.toggle("is-open", open);
+            backdrop.toggleAttribute("hidden", !open);
+            menuButton.setAttribute("aria-expanded", String(open));
+        });
+        backdrop.addEventListener("click", closeSidebar);
+        sidebar.querySelectorAll("a").forEach(link => link.addEventListener("click", closeSidebar));
+        document.addEventListener("keydown", event => { if (event.key === "Escape") closeSidebar(); });
+    }
+    document.getElementById("settingsBackButton")?.addEventListener("click", () => {
+        const referrer = document.referrer;
+        if (referrer && new URL(referrer).origin === window.location.origin && window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.assign("{% url 'workspace_page' %}");
+        }
+    });
+
     const tabs = [...document.querySelectorAll(".tab")];
     const sections = [...document.querySelectorAll(".card[id]")];
+
     const form = document.getElementById("profileForm");
     const saveButton = document.getElementById("saveProfileBtn");
-    const success = document.getElementById("successMessage");
+    const photoInput = document.getElementById("profile_picture");
+    const profileAvatar = document.getElementById("profileAvatar");
+    const profileAvatarFallback = document.getElementById("profileAvatarFallback");
+
+    const preferencesForm =
+        document.getElementById("preferencesForm");
+
+    const savePreferencesButton =
+        document.getElementById("savePreferencesBtn");
+
+    const success =
+        document.getElementById("successMessage");
 
     function activate(id, updateUrl = true) {
+
         tabs.forEach(tab => {
+
             tab.classList.toggle(
                 "active",
                 tab.dataset.target === id
             );
+
         });
 
         if (updateUrl) {
@@ -1173,23 +1804,30 @@
     }
 
     tabs.forEach(tab => {
+
         tab.addEventListener("click", () => {
+
             const id = tab.dataset.target;
             const section = document.getElementById(id);
 
             activate(id);
 
             if (section) {
+
                 section.scrollIntoView({
                     behavior: "smooth",
                     block: "start"
                 });
+
             }
+
         });
+
     });
 
     const observer = new IntersectionObserver(
         entries => {
+
             const visible = entries
                 .filter(entry => entry.isIntersecting)
                 .sort(
@@ -1199,8 +1837,14 @@
                 );
 
             if (visible.length) {
-                activate(visible[0].target.id, false);
+
+                activate(
+                    visible[0].target.id,
+                    false
+                );
+
             }
+
         },
         {
             rootMargin: "-18% 0px -62% 0px",
@@ -1208,41 +1852,102 @@
         }
     );
 
-    sections.forEach(section => observer.observe(section));
+    sections.forEach(section => {
+        observer.observe(section);
+    });
 
     if (window.location.hash) {
-        const id = window.location.hash.substring(1);
-        const section = document.getElementById(id);
+
+        const id =
+            window.location.hash.substring(1);
+
+        const section =
+            document.getElementById(id);
 
         if (section) {
+
             activate(id, false);
 
             window.setTimeout(() => {
+
                 section.scrollIntoView({
                     behavior: "smooth",
                     block: "start"
                 });
+
             }, 80);
+
         }
+
     }
 
-    if (form && saveButton) {
-        form.addEventListener("submit", () => {
-            saveButton.disabled = true;
-            saveButton.textContent = "Saving...";
+    if (photoInput && profileAvatar && profileAvatarFallback) {
+        photoInput.addEventListener("change", () => {
+            const file = photoInput.files && photoInput.files[0];
+            if (!file) return;
+            if (!file.type.startsWith("image/")) {
+                photoInput.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+                profileAvatar.src = reader.result;
+                profileAvatar.alt = "Selected profile photo preview";
+                profileAvatar.hidden = false;
+                profileAvatarFallback.hidden = true;
+            });
+            reader.readAsDataURL(file);
         });
     }
 
+    if (form && saveButton) {
+
+        form.addEventListener("submit", () => {
+
+            saveButton.disabled = true;
+            saveButton.textContent = "Saving...";
+
+        });
+
+    }
+
+    if (
+        preferencesForm &&
+        savePreferencesButton
+    ) {
+
+        preferencesForm.addEventListener(
+            "submit",
+            () => {
+
+                savePreferencesButton.disabled = true;
+                savePreferencesButton.textContent = "Saving...";
+
+            }
+        );
+
+    }
+
     if (success) {
+
         window.setTimeout(() => {
+
             success.style.opacity = "0";
-            success.style.transform = "translateY(-4px)";
+            success.style.transform =
+                "translateY(-4px)";
 
             window.setTimeout(() => {
-                success.remove();
+
+                if (success.isConnected) {
+                    success.remove();
+                }
+
             }, 280);
+
         }, 4200);
+
     }
+
 })();
 </script>
 

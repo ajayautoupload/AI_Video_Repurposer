@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
+from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError
 from django_ratelimit.decorators import ratelimit
 
@@ -13,7 +14,6 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import (
-    url_has_allowed_host_and_scheme,
     urlsafe_base64_decode,
     urlsafe_base64_encode,
 )
@@ -669,19 +669,7 @@ def password_reset_confirm(
 )
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("home")
-
-    next_url = (
-        request.GET.get("next")
-        or request.POST.get("next")
-        or "/"
-    )
-
-    if not url_has_allowed_host_and_scheme(
-        next_url,
-        {request.get_host()},
-    ):
-        next_url = "/"
+        return redirect("upload_video_page")
 
     if request.method == "POST":
         username = request.POST.get(
@@ -706,9 +694,7 @@ def login_view(request):
                 user,
             )
 
-            return redirect(
-                next_url
-            )
+            return redirect("upload_video_page")
 
         # ----------------------------------------------------
         # Detect an existing but unverified account.
@@ -741,7 +727,7 @@ def login_view(request):
         request,
         "login.html",
         {
-            "next": next_url,
+            "next": reverse("upload_video_page"),
         },
     )
 
@@ -751,6 +737,7 @@ def login_view(request):
 # ============================================================
 
 
+@require_POST
 def logout_view(request):
     logout(request)
 

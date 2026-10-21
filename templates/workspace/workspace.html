@@ -1,0 +1,14 @@
+{% extends "workspace/base.html" %}
+{% block content %}
+<section class="grid stats">
+  <article class="card"><div class="stat">{{ total_videos }}</div><div class="stat-label">Your videos</div></article>
+  <article class="card"><div class="stat">{{ processing_videos }}</div><div class="stat-label">Processing</div></article>
+  <article class="card"><div class="stat">{{ completed_videos }}</div><div class="stat-label">Completed</div></article>
+  <article class="card"><div class="stat">{{ failed_videos }}</div><div class="stat-label">Failed</div></article>
+</section>
+<section class="grid two section">
+  <article class="card"><h2>Video workspace</h2><p class="hint">Continue with your source videos, generated clips, and publishing workflow.</p><div class="row"><a href="{% url 'videos_page' %}">Manage videos</a><a href="{% url 'upload_video_page' %}">Upload a video</a></div><div class="row"><a href="{% url 'generated_clips_page' %}">Generated clips</a><a href="{% url 'upcoming_schedule_page' %}">Upcoming schedule</a></div></article>
+  <article class="card"><h2>Publishing overview</h2><p class="hint">Open the detailed Progress Report to review platform results.</p><a class="btn" href="{% url 'progress_report_page' %}">View Progress Report</a></article>
+</section>
+<section class="section"><div class="section-head"><h2>Recent videos</h2><a href="{% url 'videos_page' %}">View all</a></div><div class="card">{% for video in videos %}<div class="row"><a href="/?video_id={{ video.id }}">Video #{{ video.id }}</a><span class="badge">{{ video.status|title }}</span></div>{% empty %}<div class="empty">No videos yet. <a href="{% url 'upload_video_page' %}">Upload your first video</a>.</div>{% endfor %}</div></section>
+{% endblock %}

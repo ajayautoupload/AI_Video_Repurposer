@@ -1,0 +1,13 @@
+{% extends "workspace/base.html" %}
+{% block content %}
+<section class="grid stats">
+  <article class="card"><div class="stat">{{ total_videos }}</div><div class="stat-label">Videos</div></article>
+  <article class="card"><div class="stat">{{ completed_videos }}</div><div class="stat-label">Completed</div></article>
+  <article class="card"><div class="stat">{{ published_posts }}</div><div class="stat-label">Published</div></article>
+  <article class="card"><div class="stat">{{ scheduled_posts }}</div><div class="stat-label">Scheduled</div></article>
+  <article class="card"><div class="stat">{{ failed_posts }}</div><div class="stat-label">Failed posts</div></article>
+  <article class="card"><div class="stat">{% if views_source_available %}{{ total_channel_views }}{% else %}—{% endif %}</div><div class="stat-label">Total Views · YouTube{% if not views_source_available %}<div class="hint">Analytics unavailable</div>{% endif %}</div></article>
+  <article class="card"><div class="stat">{% if followers_source_available %}{{ total_followers }}{% else %}—{% endif %}</div><div class="stat-label">Total Followers · YouTube + Facebook{% if not followers_source_available %}<div class="hint">Analytics unavailable</div>{% endif %}</div></article>
+</section>
+<section class="card"><h2>Platform progress</h2><div class="table-wrap"><table><thead><tr><th>Platform</th><th>Published</th><th>Scheduled</th><th>Failed</th></tr></thead><tbody>{% for platform in platform_progress %}<tr><td>{{ platform.label }}</td><td>{{ platform.published }}</td><td>{{ platform.scheduled }}</td><td>{{ platform.failed }}</td></tr>{% empty %}<tr><td colspan="4">No platform activity recorded yet.</td></tr>{% endfor %}</tbody></table></div><p class="hint">Post counts reflect activity recorded by this app. Views and followers are read from connected platform analytics APIs when authorized.</p></section>
+{% endblock %}

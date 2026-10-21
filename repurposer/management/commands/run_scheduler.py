@@ -1,22 +1,17 @@
 
 import json
+from pathlib import Path
 
 from apscheduler.schedulers.blocking import BlockingScheduler
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from django.conf import settings
 
 from repurposer.models import ScheduledPost
 from repurposer.instagram_service import upload_reel_to_instagram
-
-
-# ============================================================
-# TARGET INSTAGRAM ACCOUNT AND CLIP FOLDER
-# ============================================================
-
-TARGET_INSTAGRAM_ACCOUNT_ID = 2
-
-TARGET_VIDEO_PATH_PREFIX = "processed/normal/95/"
+from repurposer.media_access import signed_public_media_url
+from repurposer.facebook_service import upload_video_to_facebook
+from repurposer.x_service import publish_video_to_x
 
 
 # ============================================================
@@ -25,8 +20,7 @@ TARGET_VIDEO_PATH_PREFIX = "processed/normal/95/"
 
 def publish_instagram_scheduled_post(post):
     """
-    Publish a scheduled Reel only for the selected Instagram account
-    and the intended clip folder.
+    Publish a scheduled Reel for its selected Instagram account.
     """
 
     if not post.instagram_account:
@@ -34,17 +28,9 @@ def publish_instagram_scheduled_post(post):
             "Instagram account is not selected."
         )
 
-    if post.instagram_account_id != TARGET_INSTAGRAM_ACCOUNT_ID:
-        raise ValueError(
-            "This post does not belong to the target Instagram account."
-        )
-
     video_path = (post.video_path or "").replace("\\", "/").lstrip("/")
-
-    if not video_path.startswith(TARGET_VIDEO_PATH_PREFIX):
-        raise ValueError(
-            "This video is outside the target clip folder."
-        )
+    if not video_path.startswith("processed/") or ".." in video_path.split("/"):
+        raise ValueError("Scheduled video path is invalid.")
 
     token_data = json.loads(
         post.instagram_account.token_json
@@ -59,11 +45,7 @@ def publish_instagram_scheduled_post(post):
     if not instagram_user_id:
         raise ValueError("Instagram account ID is missing.")
 
-    public_video_url = (
-        f"{settings.PUBLIC_BASE_URL.rstrip('/')}/"
-        f"{settings.MEDIA_URL.strip('/')}/"
-        f"{video_path}"
-    )
+    public_video_url = signed_public_media_url(video_path)
 
     result = upload_reel_to_instagram(
         instagram_user_id=instagram_user_id,
@@ -77,14 +59,54 @@ def publish_instagram_scheduled_post(post):
     return result
 
 
+def publish_due_post(post):
+    """Publish a due Instagram, Facebook, or X post locally."""
+    relative_path = (post.video_path or "").replace("\\", "/").lstrip("/")
+    if not relative_path.startswith("processed/") or ".." in relative_path.split("/"):
+        raise ValueError("Scheduled video path is invalid.")
+    video_file = (Path(settings.MEDIA_ROOT) / relative_path).resolve()
+    media_root = Path(settings.MEDIA_ROOT).resolve()
+    if media_root not in video_file.parents or not video_file.is_file():
+        raise FileNotFoundError("Scheduled video file is missing or invalid.")
+
+    if post.platform == "instagram":
+        return publish_instagram_scheduled_post(post)
+    if post.platform == "facebook":
+        if not post.facebook_page:
+            raise ValueError("Facebook Page is not selected.")
+        token_data = json.loads(post.facebook_page.token_json)
+        page_token = token_data.get("access_token")
+        page_id = token_data.get("page_id") or post.facebook_page.page_id
+        if not page_token:
+            raise ValueError("Facebook Page access token is missing.")
+        result = upload_video_to_facebook(
+            page_id=page_id,
+            page_access_token=page_token,
+            video_path=str(video_file),
+            title=post.title,
+            description=post.description,
+        )
+        return {"media_id": result.get("video_id"), "url": ""}
+    if post.platform == "x":
+        if not post.x_account:
+            raise ValueError("X account is not selected.")
+        result = publish_video_to_x(
+            post.x_account,
+            str(video_file),
+            text=post.description,
+        )
+        return {"media_id": result.get("media_id"), "post_id": result.get("post_id")}
+    raise ValueError(f"Unsupported scheduled platform: {post.platform}")
+
+
 # ============================================================
 # CHECK AND PUBLISH DUE POSTS
 # ============================================================
 
 def check_scheduled_posts():
     """
-    Publish due Instagram posts only for account ID 2
-    and the target clip folder.
+    Publish all locally scheduled posts that are due. YouTube is
+    scheduled natively during upload and is intentionally excluded.
     """
 
     now = timezone.now()
@@ -93,26 +115,25 @@ def check_scheduled_posts():
         ScheduledPost.objects
         .filter(
             status="scheduled",
-            platform="instagram",
-            instagram_account_id=TARGET_INSTAGRAM_ACCOUNT_ID,
-            video_path__startswith=TARGET_VIDEO_PATH_PREFIX,
+            platform__in=("instagram", "facebook", "x"),
             scheduled_at__lte=now,
         )
-        .select_related("instagram_account")
+        .select_related("instagram_account", "facebook_page", "x_account")
         .order_by("scheduled_at")
     )
 
     if not scheduled_posts.exists():
         print(
             f"[Scheduler] {now} - "
-            "No target Instagram posts are ready."
+            "No locally scheduled posts are ready."
         )
         return
 
     for post in scheduled_posts:
 
         print(
-            "[Scheduler] Target Instagram post ready:",
+            "[Scheduler] Scheduled post ready:",
+            f"Platform={post.platform}",
             f"ID={post.id}",
             f"Account ID={post.instagram_account_id}",
             f"Video={post.video_path}",
@@ -131,11 +152,14 @@ def check_scheduled_posts():
                 ]
             )
 
-            result = publish_instagram_scheduled_post(post)
+            result = publish_due_post(post)
 
             media_id = result.get("media_id")
 
             post.external_post_id = media_id or ""
+            if result.get("post_id"):
+                post.external_post_id = str(result["post_id"])
+            post.external_url = result.get("url") or post.external_url
             post.status = "published"
             post.error_message = ""
 
@@ -149,7 +173,7 @@ def check_scheduled_posts():
             )
 
             print(
-                "[Scheduler] Instagram published successfully:",
+                f"[Scheduler] {post.platform} published successfully:",
                 f"Post ID={post.id}",
                 f"Media ID={media_id}",
             )
@@ -167,7 +191,7 @@ def check_scheduled_posts():
             )
 
             print(
-                "[Scheduler] Instagram publishing failed:",
+                f"[Scheduler] {post.platform} publishing failed:",
                 f"Post ID={post.id}",
                 f"Error={exc}",
             )
@@ -179,13 +203,13 @@ def check_scheduled_posts():
 
 class Command(BaseCommand):
 
-    help = "Run the AI Video Repurposer Instagram scheduler."
+    help = "Run the AI Video Repurposer local publishing scheduler."
 
     def handle(self, *args, **options):
 
         self.stdout.write(
             self.style.SUCCESS(
-                "Instagram scheduler started."
+                "Local publishing scheduler started."
             )
         )
 
